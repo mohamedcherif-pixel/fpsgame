@@ -1,0 +1,148 @@
+╔══════════════════════════════════════════════════════════════╗
+║     🌐 FPS GAME - MULTIPLAYER SERVER SETUP GUIDE 🌐          ║
+╚══════════════════════════════════════════════════════════════╝
+
+⚠️ IMPORTANT: You MUST host your own server for multiplayer to work!
+
+═══════════════════════════════════════════════════════════════
+🚀 QUICK SETUP (5 MINUTES) - GLITCH.COM (FREE)
+═══════════════════════════════════════════════════════════════
+
+Step 1: Create Glitch Account
+   → Go to: https://glitch.com/
+   → Click "Sign up" (free, no credit card)
+   → Use GitHub, Facebook, or Email
+
+Step 2: Create New Project
+   → Click "New Project" button
+   → Select "hello-express"
+   → Wait for project to load
+
+Step 3: Setup Server Code
+   → Click on "server.js" in left sidebar
+   → DELETE all existing code
+   → Open "server.js" from your fpsgame folder
+   → COPY all the code
+   → PASTE into Glitch's server.js
+   → Glitch will auto-save
+
+Step 4: Setup Dependencies
+   → Click on "package.json" in left sidebar
+   → DELETE all existing code
+   → Open "package.json" from your fpsgame folder
+   → COPY all the code
+   → PASTE into Glitch's package.json
+   → Glitch will auto-install packages (wait ~30 seconds)
+
+Step 5: Get Your Server URL
+   → Click "Share" button (top right)
+   → Copy the "Live Site" URL
+   → Example: https://your-project-name.glitch.me
+   → ✅ Your server is now LIVE!
+
+Step 6: Update Game Code
+   → Open "fps-game.html" in a text editor
+   → Find line ~381 (search for "SERVER_URLS")
+   → Replace the first URL with YOUR Glitch URL:
+   
+   const SERVER_URLS = [
+       'https://your-project-name.glitch.me',  // ← PUT YOUR URL HERE
+       'http://localhost:3000',
+   ];
+   
+   → Save the file
+
+Step 7: TEST IT!
+   → Open fps-game.html in your browser
+   → Click "HOST GAME"
+   → Should connect successfully!
+   → Share Room ID with friend
+   → Friend clicks "JOIN GAME"
+   → PLAY FROM ANYWHERE IN THE WORLD! 🌍
+
+═══════════════════════════════════════════════════════════════
+🏠 ALTERNATIVE: LOCAL SERVER (TESTING ONLY)
+═══════════════════════════════════════════════════════════════
+
+Requirements:
+   → Node.js installed (https://nodejs.org/)
+
+Steps:
+   1. Open terminal/command prompt
+   2. Navigate to fpsgame folder:
+      cd C:\Users\med\Desktop\fpsgame
+   
+   3. Install dependencies:
+      npm install
+   
+   4. Start server:
+      node server.js
+   
+   5. Server runs on: http://localhost:3000
+   
+   6. In fps-game.html, use:
+      const SERVER_URLS = [
+          'http://localhost:3000',
+      ];
+
+⚠️ NOTE: Local server only works on your network!
+   Friends outside your network cannot connect.
+
+═══════════════════════════════════════════════════════════════
+❓ TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+Problem: "All servers failed"
+Solution: 
+   → Make sure you created Glitch project
+   → Check server.js and package.json are correct
+   → Wait 30 seconds for Glitch to install packages
+   → Check Glitch logs for errors (click "Logs" button)
+
+Problem: "Connection timeout"
+Solution:
+   → Check your Glitch URL is correct
+   → Make sure Glitch project is not sleeping
+   → Visit your Glitch URL in browser to wake it up
+
+Problem: "Room not found"
+Solution:
+   → Host must create room FIRST
+   → Check Room ID is typed correctly (case-sensitive)
+   → Both players must use SAME server URL
+
+═══════════════════════════════════════════════════════════════
+💡 TIPS
+═══════════════════════════════════════════════════════════════
+
+✅ Glitch projects sleep after 5 minutes of inactivity
+   → First connection may be slow (waking up server)
+   → Visit your Glitch URL to wake it before playing
+
+✅ Share your Glitch URL with friends
+   → They can use the same server
+   → Multiple rooms can run on one server
+
+✅ Glitch is FREE but has limits
+   → 4000 requests/hour
+   → Enough for casual gaming
+   → For serious use, consider paid hosting
+
+✅ Keep your Glitch project alive
+   → Use UptimeRobot (free) to ping your server
+   → Prevents sleeping
+
+═══════════════════════════════════════════════════════════════
+📞 NEED HELP?
+═══════════════════════════════════════════════════════════════
+
+1. Check README_MULTIPLAYER.md for detailed guide
+2. Check browser console (F12) for error messages
+3. Check Glitch logs for server errors
+4. Make sure both players use same server URL
+
+═══════════════════════════════════════════════════════════════
+
+🎮 ENJOY YOUR ONLINE MULTIPLAYER FPS GAME! 🎮
+
+═══════════════════════════════════════════════════════════════
