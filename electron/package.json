@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/taya7-sayeb.git"
+    "url": "https://github.com/mohamedcherif-pixel/fpsgame.git"
   },
   "scripts": {
     "start": "electron .",
@@ -97,8 +97,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "YOUR_GITHUB_USERNAME",
-        "repo": "taya7-sayeb",
+        "owner": "mohamedcherif-pixel",
+        "repo": "fpsgame",
         "releaseType": "release"
       }
     ]
