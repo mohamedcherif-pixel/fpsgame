@@ -1,0 +1,158 @@
+﻿
+=== 28228_autosave.glb ===
+Animations: 53
+- [0] mixamo.com | duration=15.400s | channels=195 | samplers=195 | targets=65 | paths=translation, rotation, scale
+- [1] bl_grip_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [2] bm_magazine_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [3] bm_magazineBottom_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [4] bm_magazinePart1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [5] bm_magazinePart2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [6] bm_magazinePart3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [7] bm_trigger_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [8] bm_triggerBasePart_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [9] l_belt_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [10] l_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [11] l_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [12] l_stockMetal_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [13] l_stockScrew_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [14] l_stockWood_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [15] ls2_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [16] ls2_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [17] ls2_button3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [18] m_base_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [19] m_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [20] m_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [21] m_button3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [22] m_safetyswitch_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [23] r_barrel_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [24] r_barrelAim_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [25] r_barrelAimCylinder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [26] r_barrelHolder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [27] r_baseNumber1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [28] r_baseNumber2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [29] r_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [30] r_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [31] r_button3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [32] r_buttons_highAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [33] r_flap_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [34] r_lowerCylinder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [35] r_numberBase_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [36] r_numberBaseCircle_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [37] r_numberSwitchButton_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [38] r_upperCylinderHole_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [39] r_woodholder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [40] r_woodholderLeft_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [41] r_woodholderUpperRight_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [42] r_woodLower_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [43] rs2_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [44] rs2_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [45] u_dustcover_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [46] u_dustcoverHolder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [47] ul_dustcoverScroll_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [48] ur_number_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [49] ur_numberBase2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [50] ur_numberHolder1Action | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [51] ur_numberHolder2Action | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [52] ur_woodUpper_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+
+=== electron\game\28228_autosave.glb ===
+Animations: 53
+- [0] mixamo.com | duration=15.400s | channels=195 | samplers=195 | targets=65 | paths=translation, rotation, scale
+- [1] bl_grip_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [2] bm_magazine_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [3] bm_magazineBottom_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [4] bm_magazinePart1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [5] bm_magazinePart2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [6] bm_magazinePart3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [7] bm_trigger_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [8] bm_triggerBasePart_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [9] l_belt_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [10] l_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [11] l_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [12] l_stockMetal_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [13] l_stockScrew_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [14] l_stockWood_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [15] ls2_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [16] ls2_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [17] ls2_button3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [18] m_base_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [19] m_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [20] m_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [21] m_button3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [22] m_safetyswitch_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [23] r_barrel_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [24] r_barrelAim_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [25] r_barrelAimCylinder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [26] r_barrelHolder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [27] r_baseNumber1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [28] r_baseNumber2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [29] r_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [30] r_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [31] r_button3_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [32] r_buttons_highAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [33] r_flap_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [34] r_lowerCylinder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [35] r_numberBase_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [36] r_numberBaseCircle_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [37] r_numberSwitchButton_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [38] r_upperCylinderHole_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [39] r_woodholder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [40] r_woodholderLeft_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [41] r_woodholderUpperRight_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [42] r_woodLower_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [43] rs2_button1_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [44] rs2_button2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [45] u_dustcover_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [46] u_dustcoverHolder_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [47] ul_dustcoverScroll_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [48] ur_number_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [49] ur_numberBase2_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [50] ur_numberHolder1Action | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [51] ur_numberHolder2Action | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+- [52] ur_woodUpper_lowAction | duration=15.533s | channels=3 | samplers=3 | targets=1 | paths=translation, rotation, scale
+
+=== electron\game\gun\gunmodels\animated_mp5.glb ===
+Animations: 3
+- [0] Armature|Reload | duration=3.600s | channels=93 | samplers=93 | targets=71 | paths=rotation, translation, scale
+- [1] Armature|Shoot | duration=0.400s | channels=84 | samplers=84 | targets=71 | paths=rotation, translation, scale
+- [2] Armature|Take | duration=0.800s | channels=199 | samplers=199 | targets=71 | paths=translation, scale, rotation
+
+=== electron\game\gun\gunmodels\animated_pistol.glb ===
+Animations: 4
+- [0] Akito Rig|Idle | duration=3.333s | channels=97 | samplers=97 | targets=72 | paths=rotation, translation
+- [1] Akito Rig|Reload | duration=3.333s | channels=120 | samplers=120 | targets=74 | paths=rotation, translation, scale
+- [2] Akito Rig|Shoot | duration=0.667s | channels=99 | samplers=99 | targets=72 | paths=rotation, translation
+- [3] Akito Rig|Take | duration=0.833s | channels=209 | samplers=209 | targets=72 | paths=translation, scale, rotation
+
+=== electron\game\gun\gunmodels\animated_rifle.glb ===
+Animations: 4
+- [0] Akito Rig|Idle | duration=2.083s | channels=147 | samplers=147 | targets=71 | paths=translation, scale, rotation
+- [1] Akito Rig|Reload | duration=3.958s | channels=153 | samplers=153 | targets=73 | paths=translation, scale, rotation
+- [2] Akito Rig|Shoot | duration=0.417s | channels=154 | samplers=154 | targets=72 | paths=translation, scale, rotation
+- [3] Akito Rig|Take | duration=0.625s | channels=209 | samplers=209 | targets=71 | paths=translation, scale, rotation
+
+=== electron\game\RifleIdle.glb ===
+Animations: 0
+
+=== gun\gunmodels\animated_mp5.glb ===
+Animations: 3
+- [0] Armature|Reload | duration=3.600s | channels=93 | samplers=93 | targets=71 | paths=rotation, translation, scale
+- [1] Armature|Shoot | duration=0.400s | channels=84 | samplers=84 | targets=71 | paths=rotation, translation, scale
+- [2] Armature|Take | duration=0.800s | channels=199 | samplers=199 | targets=71 | paths=translation, scale, rotation
+
+=== gun\gunmodels\animated_pistol.glb ===
+Animations: 4
+- [0] Akito Rig|Idle | duration=3.333s | channels=97 | samplers=97 | targets=72 | paths=rotation, translation
+- [1] Akito Rig|Reload | duration=3.333s | channels=120 | samplers=120 | targets=74 | paths=rotation, translation, scale
+- [2] Akito Rig|Shoot | duration=0.667s | channels=99 | samplers=99 | targets=72 | paths=rotation, translation
+- [3] Akito Rig|Take | duration=0.833s | channels=209 | samplers=209 | targets=72 | paths=translation, scale, rotation
+
+=== gun\gunmodels\animated_rifle.glb ===
+Animations: 4
+- [0] Akito Rig|Idle | duration=2.083s | channels=147 | samplers=147 | targets=71 | paths=translation, scale, rotation
+- [1] Akito Rig|Reload | duration=3.958s | channels=153 | samplers=153 | targets=73 | paths=translation, scale, rotation
+- [2] Akito Rig|Shoot | duration=0.417s | channels=154 | samplers=154 | targets=72 | paths=translation, scale, rotation
+- [3] Akito Rig|Take | duration=0.625s | channels=209 | samplers=209 | targets=71 | paths=translation, scale, rotation
+
+=== RifleIdle.glb ===
+Animations: 0

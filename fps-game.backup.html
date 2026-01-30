@@ -1,0 +1,4217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1v1 FPS Arena - CS:GO Style Aim Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 100;
+            transition: transform 0.1s ease;
+        }
+
+        #crosshair.shooting {
+            transform: translate(-50%, -50%) scale(1.3);
+        }
+
+        .crosshair-line {
+            position: absolute;
+            background: rgba(0, 255, 100, 0.9);
+            box-shadow: 0 0 3px rgba(0, 255, 100, 0.5);
+        }
+
+        .crosshair-h {
+            width: 14px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-v {
+            width: 2px;
+            height: 14px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-dot {
+            width: 3px;
+            height: 3px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 255, 100, 1);
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(0, 255, 100, 0.8);
+        }
+
+        .crosshair-outer {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(0, 255, 100, 0.3);
+            border-radius: 50%;
+        }
+
+        /* Crosshair customization styles */
+        .crosshair-dot-only .crosshair-line:not(.crosshair-dot),
+        .crosshair-dot-only .crosshair-outer {
+            display: none !important;
+        }
+
+        .crosshair-dot-only .crosshair-dot {
+            width: 6px;
+            height: 6px;
+            background: rgba(0, 255, 100, 1);
+            box-shadow: 0 0 8px rgba(0, 255, 100, 1);
+        }
+
+        .crosshair-customization {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .crosshair-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .crosshair-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .crosshair-preview {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .crosshair-preview-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 4px;
+            height: 4px;
+            background: rgba(0, 255, 100, 1);
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(0, 255, 100, 0.8);
+        }
+
+        .crosshair-preview-cross {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-preview-cross::before,
+        .crosshair-preview-cross::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 255, 100, 0.9);
+            box-shadow: 0 0 3px rgba(0, 255, 100, 0.5);
+        }
+
+        .crosshair-preview-cross::before {
+            width: 16px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-preview-cross::after {
+            width: 2px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #hud {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            padding: 20px;
+            z-index: 10;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        .hud-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .hud-left, .hud-right, .hud-center {
+            flex: 1;
+        }
+
+        .hud-right {
+            text-align: right;
+        }
+
+        .hud-center {
+            text-align: center;
+        }
+
+        .health-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .health-bar {
+            width: 150px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 3px;
+            margin-right: 10px;
+            overflow: hidden;
+        }
+
+        .health-bar-inner {
+            width: 100%;
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s ease;
+        }
+
+        .health-text {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .health-icon {
+            color: #4CAF50;
+            margin-right: 5px;
+        }
+
+        .stamina-container {
+            margin-top: 10px;
+        }
+
+        .stamina-bar {
+            width: 150px;
+            height: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .stamina-bar-inner {
+            width: 100%;
+            height: 100%;
+            background: #2196F3;
+            transition: width 0.3s ease;
+        }
+
+        .score-container {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .ammo-container {
+            display: inline-block;
+        }
+
+        .weapon-name {
+            font-size: 18px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .ammo-text {
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .ammo-separator {
+            font-size: 32px;
+            opacity: 0.7;
+            margin: 0 5px;
+        }
+
+        #reloadIndicator {
+            position: fixed;
+            bottom: 120px;
+            right: 30px;
+            color: #ffaa00;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+            display: none;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #killFeed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 14px;
+            text-align: right;
+            z-index: 10;
+            max-width: 300px;
+        }
+
+        .kill-message {
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        #startScreen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+        }
+
+        #startScreen p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        #startButton {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        #startButton:hover {
+            background: #ff6666;
+            transform: scale(1.05);
+        }
+
+        .controls {
+            margin-top: 30px;
+            font-size: 14px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        #gameOver {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 40px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        #gameOver h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        #gameOver button {
+            padding: 10px 30px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #hitMarker {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 101;
+            display: none;
+        }
+
+        .hit-line {
+            position: absolute;
+            background: white;
+            width: 3px;
+            height: 12px;
+        }
+
+        .hit-line:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
+        .hit-line:nth-child(2) { top: 0; right: 0; transform: rotate(-45deg); }
+        .hit-line:nth-child(3) { bottom: 0; left: 0; transform: rotate(-45deg); }
+        .hit-line:nth-child(4) { bottom: 0; right: 0; transform: rotate(45deg); }
+
+        #damageOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 30%, rgba(255,0,0,0.3) 100%);
+            pointer-events: none;
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #deathScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            color: #8B0000;
+            font-size: 100px;
+            font-family: 'Roboto', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            opacity: 0;
+            transition: opacity 1s, background 1s;
+            pointer-events: none;
+        }
+
+        /* Speaker icon overlay */
+        .speaker-icon {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            z-index: 120;
+            pointer-events: none;
+            display: none !important;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 0, 0.6));
+            transform: scale(1.2);
+            animation: speakerPulse 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes speakerPulse {
+            0% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 20px rgba(255, 255, 0, 0.6)); }
+            100% { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1)) drop-shadow(0 0 25px rgba(255, 255, 0, 0.8)); }
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>🎯 1v1 FPS ARENA</h1>
+        <p>
+            Welcome to the ultimate aim training arena! Battle against another player or AI.
+            <br>First to 10 kills wins!
+        </p>
+        <div style="margin: 20px 0;">
+            <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="12" style="padding: 12px; font-size: 16px; width: 250px; text-align: center; background: #333; color: white; border: 2px solid #555; border-radius: 5px; margin-bottom: 10px;">
+            <br>
+            <span style="font-size: 12px; color: #888;">Your username will appear above your character</span>
+        </div>
+        <div style="margin: 20px 0;">
+            <button id="hostButton" style="margin: 10px; padding: 15px 30px; font-size: 16px; background: #4CAF50; border: none; color: white; cursor: pointer; border-radius: 5px;">🌐 HOST GAME</button>
+            <button id="joinButton" style="margin: 10px; padding: 15px 30px; font-size: 16px; background: #2196F3; border: none; color: white; cursor: pointer; border-radius: 5px;">🔗 JOIN GAME</button>
+            <button id="startButton" style="margin: 10px; padding: 15px 30px; font-size: 16px;">🤖 PLAY vs AI</button>
+        </div>
+        <div id="multiplayerSetup" style="display: none; margin: 20px 0;">
+            <div id="hostInfo" style="display: none;">
+                <p><strong>Your Room ID:</strong></p>
+                <input type="text" id="roomId" readonly style="padding: 10px; font-size: 16px; width: 300px; text-align: center; background: #333; color: #0f0; border: 2px solid #0f0;">
+                <p style="font-size: 14px; color: #888;">Share this ID with your friend!</p>
+                <p id="waitingText" style="color: #ff0;">⏳ Waiting for opponent...</p>
+            </div>
+            <div id="joinInfo" style="display: none;">
+                <p><strong>Enter Room ID:</strong></p>
+                <input type="text" id="joinRoomId" placeholder="Enter room ID" style="padding: 10px; font-size: 16px; width: 300px; text-align: center;">
+                <br>
+                <button id="connectButton" style="margin-top: 10px; padding: 10px 20px; font-size: 16px; background: #4CAF50; border: none; color: white; cursor: pointer; border-radius: 5px;">CONNECT</button>
+                <button id="cancelButton" style="margin-top: 10px; padding: 10px 20px; font-size: 16px; background: #f44336; border: none; color: white; cursor: pointer; border-radius: 5px;">CANCEL</button>
+            </div>
+        </div>
+        <div class="crosshair-customization">
+            <strong>CROSSHAIR STYLE:</strong>
+            <div class="crosshair-options">
+                <div class="crosshair-option">
+                    <div class="crosshair-preview" onclick="selectCrosshair('dot')">
+                        <div class="crosshair-preview-dot"></div>
+                    </div>
+                    <label>Dot</label>
+                </div>
+                <div class="crosshair-option">
+                    <div class="crosshair-preview" onclick="selectCrosshair('cross')">
+                        <div class="crosshair-preview-cross"></div>
+                    </div>
+                    <label>Cross</label>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <strong>CONTROLS:</strong><br>
+            ZQSD - Move | Mouse - Look | Left Click - Shoot | R - Reload<br>
+            1, 2, 3 - Switch Weapons | F - Toggle DOF | ESC - Pause
+        </div>
+    </div>
+
+    <div id="crosshair">
+        <div class="crosshair-outer"></div>
+        <div class="crosshair-line crosshair-h"></div>
+        <div class="crosshair-line crosshair-v"></div>
+        <div class="crosshair-line crosshair-dot"></div>
+    </div>
+
+    <div id="hitMarker">
+        <div class="hit-line"></div>
+        <div class="hit-line"></div>
+        <div class="hit-line"></div>
+        <div class="hit-line"></div>
+    </div>
+
+    <div id="damageOverlay"></div>
+
+    <div id="hud">
+        <div class="hud-container">
+            <div class="hud-left">
+                <div class="health-container">
+                    <div class="health-bar">
+                        <div id="health-bar-inner" class="health-bar-inner"></div>
+                    </div>
+                    <div class="health-text">
+                        <span class="health-icon">+</span>
+                        <span id="health">100</span>
+                    </div>
+                </div>
+                <div class="stamina-container">
+                    <div class="stamina-bar">
+                        <div id="stamina-bar-inner" class="stamina-bar-inner"></div>
+                    </div>
+                </div>
+                 <div id="connectionStatus" style="display: none; font-size: 14px; margin-top: 5px;">
+                    <span id="connectionIcon">🌐</span> <span id="connectionText">Connecting...</span>
+                </div>
+            </div>
+            <div class="hud-center">
+                <div class="score-container">
+                    <span id="score">0</span>
+                    <span>-</span>
+                    <span id="enemyScore">0</span>
+                </div>
+            </div>
+            <div class="hud-right">
+                <div class="ammo-container">
+                    <div id="weaponName" class="weapon-name">AK-47</div>
+                    <div class="ammo-text">
+                        <span id="currentAmmo">30</span>
+                        <span class="ammo-separator">/</span>
+                        <span id="reserveAmmo">90</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="reloadIndicator">RELOADING...</div>
+
+    <div id="killFeed"></div>
+
+    <div id="gameOver">
+        <h2 id="gameOverText">VICTORY!</h2>
+        <p id="finalScore"></p>
+        <button onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+
+    <div id="deathScreen">
+        <h1>YOU DIED</h1>
+    </div>
+
+    <!-- Speaker icon overlay (hidden by default) -->
+    <div id="speakerIconOverlay" class="speaker-icon" style="display:none;">
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g filter="url(#glow)">
+          <path d="M14 50V30h14l14-14v48l-14-14H14z" fill="#fff" stroke="#ffd700" stroke-width="2"/>
+          <path d="M56 40c0 6-4.4 11-10 12v-4c3.4 0 6-2.6 6-6s-2.6-6-6-6v-4c5.6 0 10 5 10 12z" fill="#ffd700"/>
+          <path d="M68 40c0 12-8.4 20-14 26l-4-4c7-7 7-17 0-24l4-4c5.6 6 14 14 14 26z" fill="#ffed4e"/>
+          <path d="M64 40c0 9-6 15-10 20l-3-3c5-5 5-12 0-17l3-3c4 4 10 11 10 20z" fill="#fff59d"/>
+        </g>
+        <defs>
+          <filter id="glow" x="-10" y="-10" width="100" height="100" filterUnits="userSpaceOnUse">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+          </filter>
+        </defs>
+      </svg>
+    </div>
+
+    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        // Wait for Three.js to load (but don't initialize game yet)
+        window.addEventListener('load', function() {
+            if (typeof THREE === 'undefined') {
+                // Fallback if CDN fails
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js';
+                document.head.appendChild(script);
+                // Don't auto-initialize, wait for user to choose mode
+            } else {
+                console.log('Three.js loaded, waiting for user to choose game mode...');
+                // Don't auto-initialize, wait for user to choose mode
+            }
+        });
+
+        // ==================== MULTIPLAYER SYSTEM (WebRTC + Socket.IO Fallback) ====================
+        let socket = null;
+        let peer = null;
+        let peerConnection = null;
+        let dataChannel = null;
+        let isMultiplayer = false;
+        let isHost = false;
+        let otherPlayer = null;
+        let myPlayerId = null;
+        let otherPlayerId = null;
+        let currentRoomId = null;
+        let useWebRTC = true; // Use WebRTC by default (no server needed!)
+        
+        // Socket.IO server URLs (fallback option - only needed if WebRTC fails)
+        const SERVER_URLS = [
+            'http://localhost:3000',  // Local server for testing
+        ];
+        
+        let currentServerIndex = 0;
+        let connectionQuality = 'unknown'; // 'good', 'medium', 'poor', 'unknown'
+        
+        // ✅ WebRTC MULTIPLAYER - NO SERVER NEEDED!
+        // The game now uses WebRTC (PeerJS) for peer-to-peer connections.
+        // This means:
+        // - ✅ No server setup required!
+        // - ✅ Works from anywhere in the world!
+        // - ✅ Free to use (uses public PeerJS signaling server)
+        // - ✅ Direct connection between players (low latency)
+        // 
+        // Socket.IO is kept as a fallback option if WebRTC fails.
+        
+        // Position interpolation variables (declared early for use in createOtherPlayerMesh)
+        let targetOtherPlayerPosition = new THREE.Vector3(0, 1.7, 20);
+        let targetOtherPlayerRotation = new THREE.Euler(0, 0, 0);
+        let lastPositionUpdateTime = 0;
+        
+        // Create other player mesh
+        function createOtherPlayerMesh(spawnOnEnemySide = true) {
+            // Remove any existing otherPlayer to prevent duplicates
+            if (otherPlayer && scene) {
+                scene.remove(otherPlayer);
+                otherPlayer = null;
+            }
+            
+            const playerGroup = new THREE.Group();
+            playerGroup.isDying = false;
+            playerGroup.deathTimer = 0;
+            
+            // Body
+            try {
+                const bodyGeo = new THREE.CapsuleGeometry(0.5, 1.5, 4, 8);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0088ff });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                playerGroup.add(body);
+            } catch (e) {
+                const bodyGeo = new THREE.CylinderGeometry(0.5, 0.5, 2, 8);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0088ff });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                playerGroup.add(body);
+            }
+            
+            // Make sure it's visible and properly initialized
+            playerGroup.visible = true;
+            
+            // Spawn on opposite side from player
+            // Player spawns at z = -20 (player side)
+            // Other player spawns at z = 20 (enemy side)
+            const spawnZ = spawnOnEnemySide ? 20 : -20;
+            playerGroup.position.set(0, 1.7, spawnZ);
+            playerGroup.rotation.set(0, 0, 0);
+            playerGroup.quaternion.set(0, 0, 0, 1); // Initialize quaternion
+            playerGroup.castShadow = true;
+            playerGroup.receiveShadow = true;
+            
+                // Debug logs for player group and speaker icon
+                if (!playerGroup) {
+                    console.error('[DEBUG] playerGroup is undefined.');
+                } else {
+                    console.log('[DEBUG] playerGroup is defined:', playerGroup);
+                }
+            
+                if (!enemySpeakerIcon) {
+                    console.error('[DEBUG] enemySpeakerIcon is undefined. Creating now.');
+                    enemySpeakerIcon = createSpeakerIcon();
+                } else {
+                    console.log('[DEBUG] enemySpeakerIcon is defined:', enemySpeakerIcon);
+                }
+            
+            // Initialize target position
+            targetOtherPlayerPosition.set(0, 1.7, spawnZ);
+            targetOtherPlayerRotation.set(0, 0, 0);
+            
+            // Add speaker icon
+                if (!targetOtherPlayerPosition) {
+                    console.error('targetOtherPlayerPosition is undefined. Initializing now.');
+                    targetOtherPlayerPosition = new THREE.Vector3();
+                }
+                if (!targetOtherPlayerRotation) {
+                    console.error('targetOtherPlayerRotation is undefined. Initializing now.');
+                    targetOtherPlayerRotation = new THREE.Euler();
+                }
+            enemySpeakerIcon = createSpeakerIcon();
+            enemySpeakerIcon.position.set(0, 1.5, 0); // Position above head
+            enemySpeakerIcon.visible = false; // Initially hidden
+            playerGroup.add(enemySpeakerIcon);
+            
+            // Add username display
+            const usernameSprite = createUsernameSprite(gameState.otherPlayerUsername || 'Enemy');
+            usernameSprite.position.set(0, 2.2, 0); // Position above speaker icon
+            playerGroup.add(usernameSprite);
+            playerGroup.usernameSprite = usernameSprite; // Store reference for updates
+            
+            console.log('✅ Other player mesh created at:', playerGroup.position, 'spawnOnEnemySide:', spawnOnEnemySide);
+            return playerGroup;
+        }
+        
+        // Function to create a 2D speaker icon overlay
+        function createSpeakerIcon() {
+            const textureLoader = new THREE.TextureLoader();
+            const texture = textureLoader.load('Speaker_Icon.svg.png');
+            const material = new THREE.SpriteMaterial({ 
+                map: texture, 
+                color: 0xffffff,
+                transparent: true,
+                opacity: 1.0
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(0.4, 0.4, 1); // Made 2x larger (0.2 -> 0.4)
+            return sprite;
+        }
+        
+        function createUsernameSprite(username) {
+            console.log('Creating username sprite for:', username);
+            
+            // Create a canvas to render the username text
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+            
+            // Clear canvas with transparent background
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Style the text
+            context.fillStyle = '#ffffff';
+            context.strokeStyle = '#000000';
+            context.lineWidth = 3;
+            context.font = 'bold 24px Arial';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            
+            // Draw text with outline for better visibility
+            context.strokeText(username, canvas.width / 2, canvas.height / 2);
+            context.fillText(username, canvas.width / 2, canvas.height / 2);
+            
+            console.log('Canvas text drawn:', username);
+            
+            // Create texture from canvas
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            
+            // Create sprite with the text texture
+            const material = new THREE.SpriteMaterial({ 
+                map: texture, 
+                transparent: true,
+                opacity: 1.0
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(3.0, 0.75, 1); // Larger scale to make text more readable
+            
+            console.log('Username sprite created successfully');
+            return sprite;
+        }
+        // Function to update speaker icon position above player's head
+        function updateSpeakerIconPosition(worldPosition) {
+            const icon = document.getElementById('speakerIconOverlay');
+            if (!icon) return;
+            // Project 3D position to 2D screen
+            const vector = worldPosition.clone().project(camera);
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight - 80; // Offset above head (adjusted for larger icon)
+            icon.style.left = `${x - 40}px`; // Center the 80px icon
+            icon.style.top = `${y}px`;
+        }
+        // SOCKET.IO MULTIPLAYER FUNCTIONS
+        let lastPositionSend = 0;
+        
+        function sendToOther(data) {
+            if (!isMultiplayer) {
+                if (data.type !== 'position') {
+                    console.warn('⚠️ Cannot send - not in multiplayer mode');
+                }
+                return;
+            }
+            
+            // Throttle position updates (20 updates per second max)
+            if (data.type === 'position') {
+                const now = Date.now();
+                if (now - lastPositionSend < 50) return;
+                lastPositionSend = now;
+            }
+            
+            // Check WebRTC connection state more thoroughly
+            let webRTCReady = false;
+            if (useWebRTC && dataChannel) {
+                // PeerJS connections use 'open' property (boolean)
+                if (dataChannel.open === true) {
+                    webRTCReady = true;
+                } else if (dataChannel.readyState === 'open' || dataChannel.readyState === 'OPEN') {
+                    webRTCReady = true;
+                }
+            }
+            
+            // Use WebRTC if available, otherwise fallback to Socket.IO
+            if (webRTCReady) {
+                try {
+                    const dataString = JSON.stringify(data);
+                    dataChannel.send(dataString);
+                    if (data.type !== 'position') {
+                        console.log('✅ Sent via WebRTC:', data.type);
+                    }
+                } catch (e) {
+                    console.error('❌ WebRTC send error:', e);
+                    // Try fallback to Socket.IO if WebRTC fails
+                    if (socket && socket.connected) {
+            socket.emit('gameData', {
+                room: currentRoomId,
+                data: data
+            });
+                    } else {
+                        console.error('❌ Both WebRTC and Socket.IO failed to send');
+                    }
+                }
+            } else if (socket && socket.connected) {
+                // Fallback to Socket.IO
+                try {
+                    socket.emit('gameData', {
+                        room: currentRoomId,
+                        data: data
+                    });
+            if (data.type !== 'position') {
+                        console.log('✅ Sent via Socket.IO:', data.type);
+                    }
+                } catch (e) {
+                    console.error('❌ Socket.IO send error:', e);
+                }
+            } else {
+                // Connection not ready - log detailed info
+                if (data.type !== 'position') {
+                    console.warn('⚠️ Cannot send data - no connection:', data.type);
+                    console.warn('   WebRTC:', useWebRTC, 'dataChannel:', !!dataChannel, 'open:', dataChannel?.open, 'readyState:', dataChannel?.readyState);
+                    console.warn('   Socket:', !!socket, 'connected:', socket?.connected);
+                }
+            }
+        }
+        
+        // WebRTC Connection using PeerJS (FREE, no server needed!)
+        function connectWebRTC(isHosting) {
+            return new Promise((resolve, reject) => {
+                console.log('🌐 Setting up WebRTC connection (no server needed!)...');
+                
+                // Generate unique peer ID
+                const peerId = isHosting ? 
+                    'host-' + Math.random().toString(36).substring(2, 9) :
+                    null;
+                
+                // Set up timeout for connection (15 seconds)
+                const connectionTimeout = setTimeout(() => {
+                    if (peer) {
+                        peer.destroy();
+                    }
+                    reject(new Error('WebRTC connection timeout - PeerJS signaling server may be unreachable. Please try again or use AI mode.'));
+                }, 15000); // 15 second timeout
+                
+                // Initialize PeerJS (uses free public signaling server)
+                peer = new Peer(peerId, {
+                    host: '0.peerjs.com',
+                    port: 443,
+                    path: '/',
+                    secure: true,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+                
+                peer.on('open', (id) => {
+                    clearTimeout(connectionTimeout);
+                    console.log('✅ WebRTC Peer ID:', id);
+                    myPlayerId = id;
+                    currentRoomId = id;
+                    connectionQuality = 'good';
+                    resolve(id);
+                });
+                
+                peer.on('error', (err) => {
+                    clearTimeout(connectionTimeout);
+                    console.error('❌ WebRTC error:', err);
+                    if (err.type === 'peer-unavailable') {
+                        reject(new Error('Peer not found. Make sure the Room ID is correct.'));
+                    } else {
+                        reject(new Error('WebRTC connection failed: ' + err.message));
+                    }
+                });
+                
+                if (isHosting) {
+                    // Host: Wait for incoming connection
+                    peer.on('connection', (conn) => {
+                        console.log('✅ Peer connecting...', conn.peer);
+                        otherPlayerId = conn.peer;
+                        setupDataChannel(conn);
+                        
+                        // Handle connection events
+                        conn.on('open', () => {
+                            console.log('✅ Host: Client connected!');
+                            connectionQuality = 'good';
+                            isMultiplayer = true;
+                            
+                            // Create other player
+                            if (window.createMultiplayerOpponent) {
+                                window.createMultiplayerOpponent();
+                            }
+                            
+                            // Start game if not already started
+                            if (!gameState || !gameState.started) {
+                                setTimeout(() => {
+                                    if (document.getElementById('startScreen')) {
+                                        document.getElementById('startScreen').style.display = 'none';
+                                    }
+                                    gameState.started = true;
+                                    if (renderer && renderer.domElement) {
+                                        renderer.domElement.requestPointerLock();
+                                    }
+                                    updateHUD();
+                                    if (!window.animateStarted) {
+                                        window.animateStarted = true;
+                                        animate();
+                                    }
+                                }, 500);
+                            }
+                        });
+                    });
+                }
+                // Client connection is handled in the join button handler
+            });
+        }
+        
+        function setupDataChannel(conn) {
+            dataChannel = conn;
+            
+            // Handle data channel events
+            if (conn.on) {
+                conn.on('open', () => {
+                    console.log('✅ Data channel open!');
+                    connectionQuality = 'good';
+                    isMultiplayer = true;
+                    
+                    // Set player spawn position based on host/client
+                    // Host spawns on player side (z = -20), client spawns on enemy side (z = 20)
+                    if (isHost) {
+                        camera.position.set(0, 1.7, -20); // Host on player side
+                        console.log('✅ Host: Spawned on player side (z = -20)');
+                    } else {
+                        camera.position.set(0, 1.7, 20); // Client on enemy side
+                        console.log('✅ Client: Spawned on enemy side (z = 20)');
+                    }
+                    
+                    // Send a test message to verify connection
+                    try {
+                        conn.send(JSON.stringify({ type: 'test', message: 'Connection test' }));
+                    console.log('✅ Sent connection test message');
+                    
+                    // Send username after connection test
+                    if (gameState.playerUsername) {
+                        conn.send(JSON.stringify({ type: 'username', username: gameState.playerUsername }));
+                        console.log('📋 Sent username:', gameState.playerUsername);
+                    }
+                    } catch (e) {
+                        console.error('❌ Failed to send test message:', e);
+                    }
+                    
+                    // Notify that connection is ready (only if not already started)
+                    if (!gameState || !gameState.started) {
+                        if (window.createMultiplayerOpponent) {
+                            window.createMultiplayerOpponent();
+                        }
+                    }
+                });
+                
+                conn.on('data', (data) => {
+                    try {
+                        // Handle both string and object data
+                        let gameData = data;
+                        if (typeof data === 'string') {
+                            gameData = JSON.parse(data);
+                        }
+                        
+                        // Immediately handle the data
+                        handleNetworkData(gameData);
+                    } catch (e) {
+                        console.error('❌ Error parsing WebRTC data:', e, data);
+                    }
+                });
+                
+                conn.on('close', () => {
+                    console.warn('⚠️ Data channel closed');
+                    connectionQuality = 'unknown';
+                    if (gameState && gameState.started) {
+                        alert('Connection lost!');
+                    }
+                });
+                
+                conn.on('error', (err) => {
+                    console.error('❌ Data channel error:', err);
+                });
+            }
+            
+            // Also check if connection is already open
+            if (conn.open) {
+                console.log('✅ Connection already open!');
+                connectionQuality = 'good';
+                isMultiplayer = true;
+            }
+        }
+        
+        function connectToServer() {
+            return new Promise((resolve, reject) => {
+                const tryServer = (index) => {
+                    if (index >= SERVER_URLS.length) {
+                        reject(new Error('Socket.IO servers failed. WebRTC should be used instead.'));
+                        return;
+                    }
+                    
+                    const serverUrl = SERVER_URLS[index];
+                    console.log(`🌐 Connecting to Socket.IO server ${index + 1}/${SERVER_URLS.length}:`, serverUrl);
+                    
+                    // Enhanced connection options for global multiplayer
+                    socket = io(serverUrl, {
+                        transports: ['websocket', 'polling'], // Try websocket first, fallback to polling
+                        timeout: 10000, // Increased timeout for global connections (10 seconds)
+                        reconnection: true,
+                        reconnectionDelay: 1000,
+                        reconnectionDelayMax: 5000,
+                        reconnectionAttempts: 5,
+                        forceNew: true, // Force new connection
+                        upgrade: true, // Allow transport upgrades
+                        rememberUpgrade: true
+                    });
+                    
+                    // Measure connection quality
+                    const connectionStartTime = Date.now();
+                    let pingStartTime = null;
+                    
+                    const connectTimeout = setTimeout(() => {
+                        if (!socket || !socket.connected) {
+                            console.warn(`⏱️ Server ${index + 1} timeout (10s), trying next...`);
+                            if (socket) {
+                            socket.disconnect();
+                                socket = null;
+                            }
+                            tryServer(index + 1);
+                        }
+                    }, 10000); // 10 second timeout for global connections
+                    
+                    socket.on('connect', () => {
+                        clearTimeout(connectTimeout);
+                        const connectionTime = Date.now() - connectionStartTime;
+                        
+                        // Determine connection quality based on connection time
+                        if (connectionTime < 1000) {
+                            connectionQuality = 'good';
+                        } else if (connectionTime < 3000) {
+                            connectionQuality = 'medium';
+                        } else {
+                            connectionQuality = 'poor';
+                        }
+                        
+                        console.log('✅ Connected to server!', socket.id);
+                        console.log('🌍 Server:', serverUrl);
+                        console.log('📊 Connection quality:', connectionQuality, `(${connectionTime}ms)`);
+                        myPlayerId = socket.id;
+                        currentServerIndex = index;
+                        
+                        // Start ping measurement
+                        pingStartTime = Date.now();
+                        socket.emit('ping', { timestamp: pingStartTime });
+                        
+                        resolve();
+                    });
+                    
+                    // Handle ping response for latency measurement
+                    socket.on('pong', (data) => {
+                        if (pingStartTime) {
+                            const latency = Date.now() - pingStartTime;
+                            console.log('📡 Latency:', latency + 'ms');
+                            
+                            // Update connection quality based on latency
+                            if (latency < 100) {
+                                connectionQuality = 'good';
+                            } else if (latency < 300) {
+                                connectionQuality = 'medium';
+                            } else {
+                                connectionQuality = 'poor';
+                            }
+                        }
+                    });
+                    
+                    socket.on('connect_error', (error) => {
+                        clearTimeout(connectTimeout);
+                        console.error(`❌ Server ${index + 1} error:`, error.message);
+                        
+                        // More specific error messages
+                        if (error.message.includes('xhr poll error') || error.message.includes('Network Error')) {
+                            console.error('💡 Network error - check your internet connection');
+                        } else if (error.message.includes('timeout')) {
+                            console.error('💡 Connection timeout - server may be down or unreachable');
+                        } else if (error.message.includes('CORS')) {
+                            console.error('💡 CORS error - server configuration issue');
+                        }
+                        
+                        if (socket) {
+                        socket.disconnect();
+                            socket = null;
+                        }
+                        tryServer(index + 1);
+                    });
+                    
+                    socket.on('disconnect', (reason) => {
+                        console.warn('⚠️ Disconnected from server:', reason);
+                        connectionQuality = 'unknown';
+                        
+                        // Auto-reconnect for certain disconnect reasons
+                        if (reason === 'io server disconnect') {
+                            // Server disconnected, try to reconnect
+                            socket.connect();
+                        }
+                    });
+                    
+                    socket.on('reconnect', (attemptNumber) => {
+                        console.log('🔄 Reconnected after', attemptNumber, 'attempts');
+                    });
+                    
+                    socket.on('reconnect_error', (error) => {
+                        console.error('❌ Reconnection error:', error.message);
+                    });
+                    
+                    socket.on('reconnect_failed', () => {
+                        console.error('❌ Reconnection failed - all attempts exhausted');
+                        alert('Connection lost. Please refresh the page.');
+                    });
+                    
+                    // Handle incoming game data
+                    socket.on('gameData', (data) => {
+                        if (data.from !== myPlayerId) {
+                            handleNetworkData(data.data);
+                        }
+                    });
+                    
+                    // Handle player joined
+                    socket.on('playerJoined', (data) => {
+                        console.log('✅ Player joined room:', data.playerId);
+                        if (data.playerId !== myPlayerId) {
+                            otherPlayerId = data.playerId;
+                            // Create other player
+                            if (window.createMultiplayerOpponent) {
+                                window.createMultiplayerOpponent();
+                            }
+                            
+                            // Send username to the newly joined player
+                            if (gameState.playerUsername) {
+                                socket.emit('gameData', {
+                                    to: data.playerId,
+                                    data: { type: 'username', username: gameState.playerUsername }
+                                });
+                                console.log('📋 Sent username to new player:', gameState.playerUsername);
+                            }
+                        }
+                    });
+                    
+                    // Handle player left
+                    socket.on('playerLeft', (data) => {
+                        console.log('❌ Player left:', data.playerId);
+                        if (gameState && gameState.started) {
+                        alert('Other player disconnected!');
+                        }
+                    });
+                };
+                
+                tryServer(0);
+            });
+        }
+        
+        // Handle incoming data with position interpolation
+        let lastPositionLog = 0;
+        
+        // Track enemy speaker icon fade timeout
+        let enemySpeakerIconFadeTimeout = null;
+        
+        // Function to fade out enemy speaker icon opacity
+        function fadeOutEnemySpeakerIcon(duration = 3000) {
+            console.log('🔊 fadeOutEnemySpeakerIcon called, duration:', duration);
+            if (!enemySpeakerIcon) {
+                console.log('🔊 enemySpeakerIcon is null, returning');
+                return;
+            }
+            console.log('🔊 Starting fade out, current visibility:', enemySpeakerIcon.visible);
+            
+            const startTime = Date.now();
+            const startOpacity = 0.9; // Initial opacity from createSpeakerIcon
+            
+            function updateOpacity() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const opacity = startOpacity * (1 - progress);
+                
+                // Update opacity for all meshes in the speaker icon group
+                enemySpeakerIcon.traverse((child) => {
+                    if (child.material && child.material.transparent) {
+                        child.material.opacity = opacity;
+                    }
+                });
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateOpacity);
+                } else {
+                    enemySpeakerIcon.visible = false;
+                    // Reset opacity for next time
+                    enemySpeakerIcon.traverse((child) => {
+                        if (child.material && child.material.transparent) {
+                            child.material.opacity = startOpacity;
+                        }
+                    });
+                    
+                    // Stop the death sound completely when fade finishes
+                    if (activeOtherPlayerDeathSound && activeOtherPlayerDeathSound.source) {
+                        console.log('🔊 Stopping death sound completely after fade out');
+                        try {
+                            activeOtherPlayerDeathSound.source.stop();
+                        } catch (e) {
+                            console.log('Source already stopped or invalid:', e);
+                        }
+                        activeOtherPlayerDeathSound.source.disconnect();
+                        activeOtherPlayerDeathSound.gainNode.disconnect();
+                        activeOtherPlayerDeathSound = { source: null, gainNode: null };
+                    }
+                }
+            }
+            
+            updateOpacity();
+        }
+
+        function otherPlayerDied() {
+            if (otherPlayer.isDying) return;
+            otherPlayer.isDying = true;
+            otherPlayer.deathTimer = 0;
+
+            const distance = camera.position.distanceTo(otherPlayer.position);
+            const maxDistance = 50; // Max distance to hear the sound
+            const minVolume = 0.1; // Minimum volume so sound never completely shuts off
+            // Use exponential falloff for more natural sound attenuation
+            let volume = Math.exp(-distance / maxDistance);
+            volume = Math.max(minVolume, Math.min(1, volume)); // Clamp volume between minVolume and 1
+
+            console.log('🔊 otherPlayerDied called - enemySpeakerIcon visibility:', enemySpeakerIcon?.visible);
+
+            // Clear any pending fade timeouts from previous deaths
+            if (enemySpeakerIconFadeTimeout) {
+                console.log('🔊 Clearing existing enemySpeakerIconFadeTimeout:', enemySpeakerIconFadeTimeout);
+                clearTimeout(enemySpeakerIconFadeTimeout);
+                enemySpeakerIconFadeTimeout = null;
+            }
+            
+            // Test function for rapid other player deaths
+            window.testRapidOtherDeaths = function() {
+                console.log('🧪 Testing rapid other player deaths...');
+                otherPlayerDied();
+                setTimeout(() => {
+                    console.log('🧪 Second other death after 500ms');
+                    otherPlayerDied();
+                }, 500);
+                setTimeout(() => {
+                    console.log('🧪 Third other death after 1000ms');
+                    otherPlayerDied();
+                }, 1000);
+            };
+
+            // Play death sound for other player
+            if (deathSoundBuffer) {
+                // Stop any existing death sound immediately
+                if (activeOtherPlayerDeathSound && activeOtherPlayerDeathSound.source) {
+                    try {
+                        activeOtherPlayerDeathSound.source.stop();
+                        activeOtherPlayerDeathSound.source.disconnect();
+                        activeOtherPlayerDeathSound.gainNode.disconnect();
+                    } catch (e) {
+                        console.log('Error stopping previous death sound:', e);
+                    }
+                    activeOtherPlayerDeathSound = { source: null, gainNode: null };
+                }
+                
+                const soundDuration = 8; // Extended duration - sound continues much longer after respawn
+                const { source, gainNode } = playSound(deathSoundBuffer, volume, 1); // Play from 1s
+                activeOtherPlayerDeathSound = { source, gainNode }; // Store both
+
+                // Schedule the fade out and stop if it plays to its full duration
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime); // Set initial gain
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime + 4); // Keep full volume for 4 seconds
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 6); // Then fade out over last 2 seconds
+                source.stop(audioContext.currentTime + 6);
+
+                // Also, ensure the source disconnects when it ends
+                source.onended = () => {
+                    source.disconnect();
+                    gainNode.disconnect();
+                    if (activeOtherPlayerDeathSound.source === source) { // Only nullify if it's still the active one
+                        activeOtherPlayerDeathSound = { source: null, gainNode: null };
+                        // Only reset speaker icon if this is still the current sound
+                        if (enemySpeakerIcon && !otherPlayer.isDying) {
+                            enemySpeakerIcon.visible = false;
+                        }
+                    }
+                };
+            }
+
+            // Make speaker icon visible only when player dies
+            if (enemySpeakerIcon) {
+                console.log('🔊 Setting enemySpeakerIcon.visible = true');
+                enemySpeakerIcon.visible = true;
+                // Reset opacity to full for fade effect
+                enemySpeakerIcon.traverse((child) => {
+                    if (child.material && child.material.transparent) {
+                        child.material.opacity = 0.9;
+                    }
+                });
+                
+                // Start fade out after 4 seconds (sooner fade)
+                enemySpeakerIconFadeTimeout = setTimeout(() => {
+                    console.log('🔊 Starting fadeOutEnemySpeakerIcon after 4s delay (sooner)');
+                    fadeOutEnemySpeakerIcon(2000); // Faster fade out over 2 seconds
+                }, 4000);
+                console.log('🔊 Set enemySpeakerIconFadeTimeout to:', enemySpeakerIconFadeTimeout);
+            }
+
+            // Fixed respawn timer - independent of sound duration
+            setTimeout(() => {
+                console.log('🔊 Respawn timer fired - resetting otherPlayer.isDying to false');
+                otherPlayer.isDying = false;
+                otherPlayer.visible = false; // Hide until they respawn and send new position
+            }, 3000); // 3 second fixed respawn timer
+        }
+
+        function handleNetworkData(data) {
+            // Handle both string and parsed data
+            if (typeof data === 'string') {
+                try {
+                    data = JSON.parse(data);
+                } catch (e) {
+                    console.error('❌ Error parsing network data:', e, data);
+                    return;
+                }
+            }
+            
+            // Validate data structure
+            if (!data || typeof data !== 'object' || !data.type) {
+                console.error('❌ Invalid network data:', data);
+                return;
+            }
+            
+            // Only log non-position data to avoid spam
+            if (data.type !== 'position') {
+                console.log('📨 Received network data:', data.type, data);
+            }
+            
+            // Ensure otherPlayer exists
+            if (!otherPlayer) {
+                console.warn('⚠️ otherPlayer not initialized, creating now...');
+                // Try to create other player if it doesn't exist
+                if (window.createMultiplayerOpponent) {
+                    window.createMultiplayerOpponent();
+                }
+                // If still no otherPlayer after creation attempt, wait a bit and retry
+                if (!otherPlayer) {
+                    setTimeout(() => {
+                        if (window.createMultiplayerOpponent) {
+                            window.createMultiplayerOpponent();
+                        }
+                        if (otherPlayer && data.type === 'position') {
+                            handleNetworkData(data); // Retry handling this data
+                        }
+                    }, 100);
+                return;
+                }
+            }
+            
+            // Ensure otherPlayer is in scene
+            if (otherPlayer && scene && !scene.children.includes(otherPlayer)) {
+                console.log('⚠️ otherPlayer not in scene, adding now...');
+                scene.add(otherPlayer);
+            }
+            
+            switch(data.type) {
+                case 'test':
+                    console.log('✅ Received connection test - connection is working!');
+                    break;
+                case 'died':
+                    // Other player died, I get a point
+                    gameState.playerScore++;
+                    updateHUD();
+                    addKillFeedMessage('You eliminated Enemy');
+                    otherPlayerDied();
+                    if (gameState.playerScore >= 10) {
+                        endGame(true);
+                    }
+                    break;
+                case 'position':
+                    // Validate position data
+                    if (typeof data.x === 'number' && typeof data.y === 'number' && typeof data.z === 'number' &&
+                        !isNaN(data.x) && !isNaN(data.y) && !isNaN(data.z) &&
+                        isFinite(data.x) && isFinite(data.y) && isFinite(data.z)) {
+                        
+                        // Update target position for smooth interpolation
+                        targetOtherPlayerPosition.set(data.x, data.y, data.z);
+                        lastPositionUpdateTime = Date.now();
+                        
+                        // Update rotation if provided
+                        if (typeof data.rx === 'number' && typeof data.ry === 'number' && typeof data.rz === 'number' &&
+                            !isNaN(data.rx) && !isNaN(data.ry) && !isNaN(data.rz)) {
+                            targetOtherPlayerRotation.set(data.rx, data.ry, data.rz);
+                        }
+                    
+                    // Log position updates occasionally (every 2 seconds)
+                    const now = Date.now();
+                    if (now - lastPositionLog > 2000) {
+                            console.log('📍 Other player position received:', data.x.toFixed(2), data.y.toFixed(2), data.z.toFixed(2));
+                            console.log('📍 Other player target position:', targetOtherPlayerPosition.x.toFixed(2), targetOtherPlayerPosition.y.toFixed(2), targetOtherPlayerPosition.z.toFixed(2));
+                            if (otherPlayer) {
+                                console.log('📍 Other player current position:', otherPlayer.position.x.toFixed(2), otherPlayer.position.y.toFixed(2), otherPlayer.position.z.toFixed(2));
+                                console.log('📍 Other player visible:', otherPlayer.visible, 'in scene:', scene?.children.includes(otherPlayer));
+                            }
+                        lastPositionLog = now;
+                        }
+                    } else {
+                        console.error('❌ Invalid position data:', data);
+                    }
+                    break;
+                case 'shoot':
+                    console.log('Other player shot!');
+                    // Show muzzle flash at other player's position
+                    if (scene) {
+                        const flash = new THREE.PointLight(0xffaa00, 5, 12);
+                        flash.position.copy(otherPlayer.position);
+                        scene.add(flash);
+                        setTimeout(() => scene.remove(flash), 50);
+                    }
+                    break;
+                case 'hit':
+                    // We got hit by other player
+                    console.log('Got hit by other player! Damage:', data.damage);
+                    if (data.target === myPlayerId && gameState && typeof data.damage === 'number' && !isNaN(data.damage)) {
+                        if (gameState.playerHealth > 0) { // Prevent multiple deaths
+                            gameState.playerHealth -= data.damage;
+                            updateHUD();
+                            showDamage();
+                            if (gameState.playerHealth <= 0) {
+                                playerDied();
+                                sendToOther({ type: 'died' });
+                            }
+                        }
+                    }
+                    break;
+                case 'weapon':
+                    // Other player switched weapon
+                    console.log('Other player switched weapon');
+                    break;
+                case 'username':
+                    // Other player sent their username
+                    if (data.username && typeof data.username === 'string') {
+                        gameState.otherPlayerUsername = data.username;
+                        console.log('📋 Other player username received:', data.username);
+                        
+                        // Update the other player's username sprite if it exists
+                        if (otherPlayer && otherPlayer.usernameSprite) {
+                            // Remove old sprite
+                            otherPlayer.remove(otherPlayer.usernameSprite);
+                            
+                            // Create new sprite with updated username
+                            const newUsernameSprite = createUsernameSprite(data.username);
+                            newUsernameSprite.position.set(0, 2.2, 0); // Position above speaker icon
+                            otherPlayer.add(newUsernameSprite);
+                            otherPlayer.usernameSprite = newUsernameSprite;
+                        }
+                    }
+                    break;
+            }
+        }
+        
+        // Setup multiplayer buttons (will be initialized after initGame)
+        function setupMultiplayerButtons() {
+            document.getElementById('hostButton').addEventListener('click', async () => {
+                console.log('🌐 HOST GAME clicked - WebRTC multiplayer (no server needed!)');
+                
+                // Initialize game first
+                if (!window.gameInitialized) {
+                    console.log('Initializing game...');
+                    initGame();
+                }
+                
+                // Show loading
+                document.getElementById('multiplayerSetup').style.display = 'block';
+                document.getElementById('hostInfo').style.display = 'block';
+                document.getElementById('roomId').value = 'Setting up connection...';
+                document.getElementById('waitingText').textContent = '⏳ Setting up WebRTC connection...';
+                
+                try {
+                    // Connect using WebRTC (no server needed!)
+                    const peerId = await connectWebRTC(true);
+                    isMultiplayer = true;
+                    isHost = true;
+                    
+                    // Show room ID (this is the Peer ID)
+                    document.getElementById('roomId').value = peerId;
+                    document.getElementById('waitingText').textContent = '⏳ Waiting for opponent...\n\nShare this Room ID with your friend!\n\n🌍 Works from anywhere in the world!';
+                    
+                    console.log('✅ ROOM CREATED:', peerId);
+                    console.log('📋 Share this ID with your friend anywhere in the world!');
+                    
+                    // Wait for player to join (handled in setupDataChannel and peer connection event)
+                    let connectionReady = false;
+                    const checkConnection = setInterval(() => {
+                        if (dataChannel && (dataChannel.open === true || dataChannel.readyState === 'open')) {
+                            if (!connectionReady) {
+                                connectionReady = true;
+                                clearInterval(checkConnection);
+                            document.getElementById('waitingText').textContent = '✅ Player connected! Starting game...';
+                            
+                            // Create other player
+                            if (window.createMultiplayerOpponent) {
+                                window.createMultiplayerOpponent();
+                            }
+                            
+                            // Start game
+                            setTimeout(() => {
+                                document.getElementById('startScreen').style.display = 'none';
+                                gameState.started = true;
+                                renderer.domElement.requestPointerLock();
+                                updateHUD();
+                                if (!window.animateStarted) {
+                                    window.animateStarted = true;
+                                    animate();
+                                }
+                            }, 1000);
+                        }
+                        }
+                    }, 300);
+                    
+                    // Cleanup after 30 seconds if no connection
+                    setTimeout(() => {
+                        if (!connectionReady) {
+                            clearInterval(checkConnection);
+                        }
+                    }, 30000);
+                    
+                } catch (error) {
+                    console.error('WebRTC connection failed:', error);
+                    alert('❌ Connection failed: ' + error.message + '\n\nTry again or use "PLAY vs AI" for offline mode.');
+                    document.getElementById('multiplayerSetup').style.display = 'none';
+                    document.getElementById('hostInfo').style.display = 'none';
+                }
+            });
+            
+            document.getElementById('joinButton').addEventListener('click', () => {
+                // Initialize game first
+                if (!window.gameInitialized) {
+                    initGame();
+                }
+                
+                document.getElementById('multiplayerSetup').style.display = 'block';
+                document.getElementById('joinInfo').style.display = 'block';
+            });
+            
+            document.getElementById('connectButton').addEventListener('click', async () => {
+                const roomId = document.getElementById('joinRoomId').value.trim();
+                if (!roomId) {
+                    alert('Please enter a Room ID!');
+                    return;
+                }
+                otherPlayerId = roomId;
+                
+                // Set isHost to false when joining
+                isHost = false;
+                console.log('🔗 Joining room via WebRTC:', roomId);
+                document.getElementById('joinRoomId').value = 'Connecting...';
+                document.getElementById('connectButton').disabled = true;
+                
+                let connectionCheckInterval = null;
+                let connectionTimeout = null;
+                
+                try {
+                    // Connect using WebRTC
+                    await connectWebRTC(false);
+                    
+                    // Wait a moment for peer to be fully ready
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Connect to the host peer
+                    console.log('Connecting to peer:', roomId);
+                    const conn = peer.connect(roomId, {
+                        reliable: true
+                    });
+                    
+                    if (!conn) {
+                        throw new Error('Failed to create connection');
+                    }
+                    
+                    // Set up connection handlers before setting up data channel
+                    conn.on('open', () => {
+                        console.log('✅ Connection opened!');
+                        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+                        if (connectionTimeout) clearTimeout(connectionTimeout);
+                        
+                        // Set client spawn position (enemy side)
+                        camera.position.set(0, 1.7, 20);
+                        console.log('✅ Client: Spawned on enemy side (z = 20)');
+                            
+                            // Create other player
+                            if (window.createMultiplayerOpponent) {
+                                window.createMultiplayerOpponent();
+                            }
+                            
+                            // Start game
+                            document.getElementById('startScreen').style.display = 'none';
+                            gameState.started = true;
+                            renderer.domElement.requestPointerLock();
+                            updateHUD();
+                            if (!window.animateStarted) {
+                                window.animateStarted = true;
+                                animate();
+                            }
+                    });
+                    
+                    conn.on('error', (err) => {
+                        console.error('❌ Connection error:', err);
+                        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+                        if (connectionTimeout) clearTimeout(connectionTimeout);
+                        alert('Connection error: ' + (err.message || 'Failed to connect') + '\n\nMake sure the Room ID is correct and the host is waiting.');
+                        document.getElementById('joinRoomId').value = roomId;
+                        document.getElementById('connectButton').disabled = false;
+                    });
+                    
+                    conn.on('close', () => {
+                        console.warn('⚠️ Connection closed');
+                        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+                        if (connectionTimeout) clearTimeout(connectionTimeout);
+                        if (!gameState || !gameState.started) {
+                            alert('Connection closed. Room may not exist or host disconnected.');
+                            document.getElementById('joinRoomId').value = roomId;
+                            document.getElementById('connectButton').disabled = false;
+                        }
+                    });
+                    
+                    setupDataChannel(conn);
+                    currentRoomId = roomId;
+                    isMultiplayer = true;
+                    
+                    // Wait for connection to open with better checking
+                    connectionCheckInterval = setInterval(() => {
+                        if (conn.open === true || conn.readyState === 'open') {
+                            clearInterval(connectionCheckInterval);
+                            if (connectionTimeout) clearTimeout(connectionTimeout);
+                            console.log('✅ Connected to host!');
+                            
+                            // Create other player
+                            if (window.createMultiplayerOpponent) {
+                                window.createMultiplayerOpponent();
+                            }
+                            
+                            // Start game
+                            document.getElementById('startScreen').style.display = 'none';
+                            gameState.started = true;
+                            renderer.domElement.requestPointerLock();
+                            updateHUD();
+                            if (!window.animateStarted) {
+                                window.animateStarted = true;
+                                animate();
+                            }
+                        } else if (conn.destroyed) {
+                            clearInterval(connectionCheckInterval);
+                            if (connectionTimeout) clearTimeout(connectionTimeout);
+                            alert('Connection failed. Room may not exist or host disconnected.');
+                            document.getElementById('joinRoomId').value = roomId;
+                            document.getElementById('connectButton').disabled = false;
+                        }
+                    }, 300);
+                    
+                    // Extended timeout for WebRTC connection
+                    connectionTimeout = setTimeout(() => {
+                        if (!gameState || !gameState.started) {
+                            if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+                            if (conn && conn.open !== true && conn.readyState !== 'open') {
+                                console.error('Connection timeout - peer may be offline');
+                                alert('Connection timeout. Please check:\n\n1. Room ID is correct\n2. Host is waiting in the game\n3. Both players have good internet connection\n\nTry again!');
+                                document.getElementById('joinRoomId').value = roomId;
+                                document.getElementById('connectButton').disabled = false;
+                            }
+                        }
+                    }, 15000); // 15 seconds for WebRTC
+                    
+                } catch (error) {
+                    console.error('Connection failed:', error);
+                    if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+                    if (connectionTimeout) clearTimeout(connectionTimeout);
+                    alert('❌ Connection failed: ' + error.message + '\n\nMake sure:\n1. Room ID is correct\n2. Host is waiting in the game\n3. You have internet connection');
+                    document.getElementById('joinRoomId').value = roomId;
+                    document.getElementById('connectButton').disabled = false;
+                }
+            });
+            
+            document.getElementById('cancelButton').addEventListener('click', () => {
+                document.getElementById('multiplayerSetup').style.display = 'none';
+                document.getElementById('hostInfo').style.display = 'none';
+                document.getElementById('joinInfo').style.display = 'none';
+                if (peer) peer.destroy();
+            });
+        }
+        
+        // Call setup after page loads
+        setupMultiplayerButtons();
+
+        // Global game variables (accessible from multiplayer handlers)
+        let gameState, scene, camera, renderer, updateHUD, animate, showDamage, playerDied, endGame, addKillFeedMessage;
+        let boxes = [];
+        let enemy;
+        let deathSoundBuffer = null;
+        let activeDeathSound = { source: null, gainNode: null };
+        let activeOtherPlayerDeathSound = { source: null, gainNode: null };
+        let enemySpeakerIcon = null;
+
+        // Enhanced weapon animation system
+        let weaponSwayTime = 0;
+        let weaponIdleSway = { x: 0, y: 0, z: 0 };
+        let weaponSwayTarget = { x: 0, y: 0, z: 0 };
+        let weaponRecoilRotation = { x: 0, y: 0, z: 0 };
+        let weaponRecoilY = 0; // Store recoil Y for smooth recovery
+
+        // Audio Context for sound effects
+        const AudioContext = window.AudioContext || window.webkit.AudioContext;
+        const audioContext = new AudioContext();
+
+        // Utility function to play sounds
+        function playSound(buffer, volume = 1, offset = 0) {
+            if (!buffer) return null;
+
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = volume;
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            source.start(0, offset);
+            
+            return { source, gainNode }; // Return both source and gainNode
+        }
+
+        function initGame() {
+        // Prevent double initialization
+        if (window.gameInitialized) {
+            console.log('Game already initialized');
+            return;
+        }
+        window.gameInitialized = true;
+        console.log('Initializing game...');
+        
+        // Load death sound
+        fetch('diesound.mp3')
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                deathSoundBuffer = audioBuffer;
+                console.log('Death sound loaded!');
+            })
+            .catch(e => console.error('Error loading death sound:', e));
+
+        // Advanced realistic sound generation
+        function playShootSound(weaponType, volume = 1) {
+            const now = audioContext.currentTime;
+            
+            // Create noise buffer for realistic gunshot
+            const bufferSize = audioContext.sampleRate * 0.5;
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            const noise = audioContext.createBufferSource();
+            noise.buffer = noiseBuffer;
+            
+            const noiseFilter = audioContext.createBiquadFilter();
+            const noiseGain = audioContext.createGain();
+            
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(audioContext.destination);
+            
+            if (weaponType === 'rifle') {
+                // AK-47 sound: Sharp crack with bass rumble
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(800, now);
+                noiseFilter.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                noiseFilter.Q.value = 1;
+                
+                noiseGain.gain.setValueAtTime(0.6 * volume, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.15);
+                
+                // Add bass thump
+                const bass = audioContext.createOscillator();
+                const bassGain = audioContext.createGain();
+                bass.connect(bassGain);
+                bassGain.connect(audioContext.destination);
+                bass.frequency.setValueAtTime(80, now);
+                bass.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+                bassGain.gain.setValueAtTime(0.4 * volume, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.1);
+                bass.start(now);
+                bass.stop(now + 0.1);
+                
+            } else if (weaponType === 'pistol') {
+                // Desert Eagle: Sharp high-frequency crack
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.setValueAtTime(1200, now);
+                noiseFilter.frequency.exponentialRampToValueAtTime(400, now + 0.03);
+                
+                noiseGain.gain.setValueAtTime(0.5 * volume, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.08);
+                
+                // Metallic ring
+                const ring = audioContext.createOscillator();
+                const ringGain = audioContext.createGain();
+                ring.connect(ringGain);
+                ringGain.connect(audioContext.destination);
+                ring.frequency.setValueAtTime(2000, now);
+                ring.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
+                ringGain.gain.setValueAtTime(0.15 * volume, now);
+                ringGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.05);
+                ring.start(now);
+                ring.stop(now + 0.05);
+                
+            } else if (weaponType === 'sniper') {
+                // AWP: Massive boom with echo
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.setValueAtTime(600, now);
+                noiseFilter.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                
+                noiseGain.gain.setValueAtTime(0.8 * volume, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.3);
+                
+                // Deep bass boom
+                const boom = audioContext.createOscillator();
+                const boomGain = audioContext.createGain();
+                boom.connect(boomGain);
+                boomGain.connect(audioContext.destination);
+                boom.frequency.setValueAtTime(60, now);
+                boom.frequency.exponentialRampToValueAtTime(20, now + 0.2);
+                boomGain.gain.setValueAtTime(0.6 * volume, now);
+                boomGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.2);
+                boom.start(now);
+                boom.stop(now + 0.2);
+            }
+            
+            noise.start(now);
+            noise.stop(now + 0.3);
+        }
+
+        function playReloadSound(volume = 1) {
+            const now = audioContext.currentTime;
+            
+            // Magazine out (metallic click)
+            const click1 = audioContext.createOscillator();
+            const click1Gain = audioContext.createGain();
+            click1.connect(click1Gain);
+            click1Gain.connect(audioContext.destination);
+            click1.frequency.setValueAtTime(800, now);
+            click1.frequency.exponentialRampToValueAtTime(200, now + 0.02);
+            click1Gain.gain.setValueAtTime(0.3 * volume, now);
+            click1Gain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.02);
+            click1.start(now);
+            click1.stop(now + 0.02);
+            
+            // Magazine slide (mechanical noise)
+            const bufferSize = audioContext.sampleRate * 0.3;
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+            }
+            
+            const noise = audioContext.createBufferSource();
+            noise.buffer = noiseBuffer;
+            const noiseFilter = audioContext.createBiquadFilter();
+            const noiseGain = audioContext.createGain();
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(audioContext.destination);
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.value = 400;
+            noiseGain.gain.setValueAtTime(0.15 * volume, now + 0.3);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.6);
+            noise.start(now + 0.3);
+            
+            // Magazine in (solid click)
+            const click2 = audioContext.createOscillator();
+            const click2Gain = audioContext.createGain();
+            click2.connect(click2Gain);
+            click2Gain.connect(audioContext.destination);
+            click2.frequency.setValueAtTime(600, now + 0.7);
+            click2.frequency.exponentialRampToValueAtTime(150, now + 0.72);
+            click2Gain.gain.setValueAtTime(0.35 * volume, now + 0.7);
+            click2Gain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 0.72);
+            click2.start(now + 0.7);
+            click2.stop(now + 0.72);
+            
+            // Bolt/slide rack (metallic scrape)
+            const rack = audioContext.createOscillator();
+            const rackGain = audioContext.createGain();
+            rack.connect(rackGain);
+            rackGain.connect(audioContext.destination);
+            rack.type = 'sawtooth';
+            rack.frequency.setValueAtTime(300, now + 1.0);
+            rack.frequency.linearRampToValueAtTime(500, now + 1.15);
+            rackGain.gain.setValueAtTime(0.2 * volume, now + 1.0);
+            rackGain.gain.exponentialRampToValueAtTime(0.01 * volume, now + 1.15);
+            rack.start(now + 1.0);
+            rack.stop(now + 1.15);
+        }
+
+        function playHitSound(volume = 1) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.05);
+            gainNode.gain.setValueAtTime(0.2 * volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01 * volume, audioContext.currentTime + 0.05);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.05);
+        }
+
+        // Distance-based volume calculation function
+        function calculateDistanceVolume(sourcePosition, maxDistance = 30, minVolume = 0.05) {
+            if (!sourcePosition) return 1; // Default to full volume if no position
+            
+            const distance = camera.position.distanceTo(sourcePosition);
+            // Use more aggressive exponential falloff for quieter distant sounds
+            const falloffRate = 2.5; // Higher value = faster falloff
+            let volume = Math.exp(-(distance / maxDistance) * falloffRate);
+            volume = Math.max(minVolume, Math.min(1, volume)); // Clamp volume between minVolume and 1
+            
+            // Debug logging for testing (occasionally to avoid spam)
+            if (Math.random() < 0.005) { // 0.5% chance to log
+                console.log(`Distance volume: ${volume.toFixed(3)} at distance: ${distance.toFixed(1)}m (max: ${maxDistance}m)`);
+            }
+            
+            return volume;
+        }
+
+        // Real-time enemy sound volume updates
+        function updateEnemySoundVolumes() {
+            if (!enemy || !enemy.visible) return;
+            
+            const distance = camera.position.distanceTo(enemy.position);
+            const volume = calculateDistanceVolume(enemy.position);
+            
+            // Store the current volume for enemy sounds
+            if (!gameState.enemySoundVolume) {
+                gameState.enemySoundVolume = volume;
+            } else {
+                // Smooth volume transitions to avoid abrupt changes
+                gameState.enemySoundVolume = THREE.MathUtils.lerp(gameState.enemySoundVolume, volume, 0.1);
+            }
+        }
+
+        function playFootstepSound(volume = 1) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'brown';
+            oscillator.frequency.setValueAtTime(80, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.05 * volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01 * volume, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Weapon System
+        const weapons = {
+            rifle: {
+                name: 'AK-47',
+                damage: 30,
+                fireRate: 100,
+                maxAmmo: 30,
+                reserveAmmo: 90,
+                reloadTime: 2000,
+                type: 'rifle'
+            },
+            pistol: {
+                name: 'Desert Eagle',
+                damage: 50,
+                fireRate: 300,
+                maxAmmo: 7,
+                reserveAmmo: 35,
+                reloadTime: 1500,
+                type: 'pistol'
+            },
+            sniper: {
+                name: 'AWP',
+                damage: 100,
+                fireRate: 1000,
+                maxAmmo: 5,
+                reserveAmmo: 20,
+                reloadTime: 2500,
+                type: 'sniper'
+            }
+        };
+
+        // Enhanced Camera Shake System with Perlin Noise (Realistic Settings)
+        const cameraShake = {
+            intensity: 0,
+            targetIntensity: 0,
+            decay: 0.88, // Faster decay for more realistic feel
+            offsetX: 0,
+            offsetY: 0,
+            offsetZ: 0,
+            rotationX: 0,
+            rotationY: 0,
+            time: 0,
+            shakePattern: 'default', // 'default', 'rifle', 'pistol', 'sniper'
+            smoothOffsetX: 0,
+            smoothOffsetY: 0,
+            smoothOffsetZ: 0,
+            smoothRotationX: 0,
+            smoothRotationY: 0
+        };
+
+        // Simple Perlin-like noise for smooth shake
+        function noise(x, y) {
+            const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+            return (n - Math.floor(n)) * 2 - 1;
+        }
+
+        // Smooth interpolation
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function applyCameraShake(intensity, pattern = 'default') {
+            cameraShake.targetIntensity = Math.max(cameraShake.targetIntensity, intensity);
+            cameraShake.intensity = Math.max(cameraShake.intensity, intensity);
+            cameraShake.shakePattern = pattern;
+        }
+
+        function updateCameraShake(deltaTime) {
+            // Only increment time when there's actual shake happening (slower for realism)
+            if (cameraShake.intensity > 0.001) {
+                cameraShake.time += deltaTime * 15; // Reduced from 20 for more natural feel
+                
+                // Use Perlin-like noise for smoother shake
+                const noiseX = noise(cameraShake.time, 0);
+                const noiseY = noise(0, cameraShake.time);
+                const noiseZ = noise(cameraShake.time * 0.5, cameraShake.time * 0.5);
+                const noiseRotX = noise(cameraShake.time * 1.5, 0);
+                const noiseRotY = noise(0, cameraShake.time * 1.5);
+                
+                // Weapon-specific shake patterns (more realistic, less exaggerated)
+                let shakeMultiplier = 1.0;
+                let rotationMultiplier = 1.0;
+                let frequency = 1.0;
+                
+                switch(cameraShake.shakePattern) {
+                    case 'rifle':
+                        // Moderate, controlled shake for rifle
+                        frequency = 1.2;
+                        shakeMultiplier = 0.6;
+                        rotationMultiplier = 0.5;
+                        break;
+                    case 'pistol':
+                        // Quick, snappy but subtle shake
+                        frequency = 1.5;
+                        shakeMultiplier = 0.5;
+                        rotationMultiplier = 0.6;
+                        break;
+                    case 'sniper':
+                        // Heavy but controlled shake
+                        frequency = 0.6;
+                        shakeMultiplier = 0.8;
+                        rotationMultiplier = 0.7;
+                        break;
+                    default:
+                        // Default subtle shake
+                        frequency = 1.0;
+                        shakeMultiplier = 0.4;
+                        rotationMultiplier = 0.4;
+                        break;
+                }
+                
+                // Calculate shake offsets with smooth noise (reduced multipliers for realism)
+                const targetOffsetX = noiseX * cameraShake.intensity * shakeMultiplier * frequency * 0.6;
+                const targetOffsetY = noiseY * cameraShake.intensity * shakeMultiplier * frequency * 0.6;
+                const targetOffsetZ = noiseZ * cameraShake.intensity * 0.3 * shakeMultiplier;
+                const targetRotX = noiseRotX * cameraShake.intensity * 0.015 * rotationMultiplier;
+                const targetRotY = noiseRotY * cameraShake.intensity * 0.015 * rotationMultiplier;
+                
+                // Smooth interpolation for less jittery shake (more responsive for realism)
+                cameraShake.smoothOffsetX = lerp(cameraShake.smoothOffsetX, targetOffsetX, 0.4);
+                cameraShake.smoothOffsetY = lerp(cameraShake.smoothOffsetY, targetOffsetY, 0.4);
+                cameraShake.smoothOffsetZ = lerp(cameraShake.smoothOffsetZ, targetOffsetZ, 0.4);
+                cameraShake.smoothRotationX = lerp(cameraShake.smoothRotationX, targetRotX, 0.4);
+                cameraShake.smoothRotationY = lerp(cameraShake.smoothRotationY, targetRotY, 0.4);
+                
+                // Apply smoothed values
+                cameraShake.offsetX = cameraShake.smoothOffsetX;
+                cameraShake.offsetY = cameraShake.smoothOffsetY;
+                cameraShake.offsetZ = cameraShake.smoothOffsetZ;
+                cameraShake.rotationX = cameraShake.smoothRotationX;
+                cameraShake.rotationY = cameraShake.smoothRotationY;
+                
+                // Exponential decay with curve
+                const decayRate = cameraShake.decay + (1 - cameraShake.decay) * (1 - cameraShake.intensity);
+                cameraShake.intensity *= decayRate;
+                cameraShake.targetIntensity *= decayRate;
+            } else {
+                // Force immediate reset when intensity is zero
+                cameraShake.smoothOffsetX = lerp(cameraShake.smoothOffsetX, 0, 0.5);
+                cameraShake.smoothOffsetY = lerp(cameraShake.smoothOffsetY, 0, 0.5);
+                cameraShake.smoothOffsetZ = lerp(cameraShake.smoothOffsetZ, 0, 0.5);
+                cameraShake.smoothRotationX = lerp(cameraShake.smoothRotationX, 0, 0.5);
+                cameraShake.smoothRotationY = lerp(cameraShake.smoothRotationY, 0, 0.5);
+                
+                cameraShake.offsetX = cameraShake.smoothOffsetX;
+                cameraShake.offsetY = cameraShake.smoothOffsetY;
+                cameraShake.offsetZ = cameraShake.smoothOffsetZ;
+                cameraShake.rotationX = cameraShake.smoothRotationX;
+                cameraShake.rotationY = cameraShake.smoothRotationY;
+                
+                // Force zero when close enough
+                if (Math.abs(cameraShake.offsetX) < 0.0001 && 
+                    Math.abs(cameraShake.offsetY) < 0.0001 && 
+                    Math.abs(cameraShake.offsetZ) < 0.0001 &&
+                    Math.abs(cameraShake.rotationX) < 0.0001 && 
+                    Math.abs(cameraShake.rotationY) < 0.0001) {
+                    cameraShake.intensity = 0;
+                    cameraShake.targetIntensity = 0;
+                    cameraShake.time = 0;
+                cameraShake.offsetX = 0;
+                cameraShake.offsetY = 0;
+                cameraShake.offsetZ = 0;
+                cameraShake.rotationX = 0;
+                cameraShake.rotationY = 0;
+                    cameraShake.smoothOffsetX = 0;
+                    cameraShake.smoothOffsetY = 0;
+                    cameraShake.smoothOffsetZ = 0;
+                    cameraShake.smoothRotationX = 0;
+                    cameraShake.smoothRotationY = 0;
+                }
+            }
+        }
+
+        // Game State
+        gameState = {
+            started: false,
+            paused: false,
+            isDying: false,
+            deathTimer: 0,
+            pendingFadeTimeout: null,
+            playerHealth: 100,
+            enemyHealth: 100,
+            playerScore: 0,
+            enemyScore: 0,
+            currentWeapon: 'rifle',
+            currentAmmo: 30,
+            reserveAmmo: 90,
+            maxAmmo: 30,
+            isReloading: false,
+            canShoot: true,
+            isMoving: false,
+            wasMoving: false,
+            movementSpeed: 0,
+            targetMovementSpeed: 0,
+            headBob: 0,
+            headBobPhase: 0,
+            footstepTimer: 0,
+            landingTimer: 0,
+            baseHeight: 1.7,
+            currentHeight: 1.7,
+            velocityY: 0,
+            onGround: true,
+            lean: 0,
+            leanTarget: 0,
+            isJumping: false,
+            velocityY: 0,
+            isSprinting: false,
+            stamina: 100,
+            maxStamina: 100,
+            playerUsername: '',
+            otherPlayerUsername: ''
+        };
+
+        // Three.js Setup with Ultra Graphics
+        scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x333333, 10, 100);
+        scene.background = new THREE.Color(0x1a1a1a);
+        
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // High-quality renderer setup
+        renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance",
+            alpha: false,
+            stencil: false
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Ultra quality shadows
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.autoUpdate = true;
+        
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.8;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.physicallyCorrectLights = false;
+        document.body.appendChild(renderer.domElement);
+
+        // Motion Blur & Depth of Field System
+        let previousCameraPosition = new THREE.Vector3();
+        let previousCameraQuaternion = new THREE.Quaternion();
+        let motionBlurAmount = 0;
+        
+        // Create render targets for post-processing
+        const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            format: THREE.RGBAFormat,
+            stencilBuffer: false
+        });
+        
+        const depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+            format: THREE.RGBAFormat
+        });
+
+        // Custom Depth of Field + Motion Blur Shader
+        const postProcessMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                tDiffuse: { value: null },
+                tDepth: { value: null },
+                cameraNear: { value: camera.near },
+                cameraFar: { value: camera.far },
+                focusDistance: { value: 10.0 },
+                focalLength: { value: 0.05 },
+                bokehScale: { value: 0.5 },
+                motionBlur: { value: 0.0 },
+                enableDOF: { value: 0.0 },
+                resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform sampler2D tDepth;
+                uniform float cameraNear;
+                uniform float cameraFar;
+                uniform float focusDistance;
+                uniform float focalLength;
+                uniform float bokehScale;
+                uniform float motionBlur;
+                uniform float enableDOF;
+                uniform vec2 resolution;
+                varying vec2 vUv;
+                
+                // Correct depth unpacking from depth texture
+                float readDepth(vec2 uv) {
+                    vec4 depthColor = texture2D(tDepth, uv);
+                    float depth = depthColor.r;
+                    
+                    // Convert from normalized depth to linear depth
+                    float z = depth * 2.0 - 1.0;
+                    float linearDepth = (2.0 * cameraNear * cameraFar) / (cameraFar + cameraNear - z * (cameraFar - cameraNear));
+                    return linearDepth;
+                }
+                
+                float getBlurAmount(float depth) {
+                    float diff = abs(depth - focusDistance);
+                    float blur = diff * focalLength;
+                    return clamp(blur, 0.0, bokehScale);
+                }
+                
+                vec4 applyDOF(vec2 uv, vec4 originalColor) {
+                    if (enableDOF < 0.5) {
+                        return originalColor;
+                    }
+                    
+                    float centerDepth = readDepth(uv);
+                    float blur = getBlurAmount(centerDepth);
+                    
+                    // Only blur if blur amount is significant
+                    if (blur < 0.05) {
+                        return originalColor;
+                    }
+                    
+                    vec4 color = vec4(0.0);
+                    float total = 0.0;
+                    float radius = blur * 0.005;
+                    
+                    // Simple blur pattern
+                    for (float angle = 0.0; angle < 6.28318; angle += 0.785) {
+                        for (float dist = 0.2; dist <= 1.0; dist += 0.4) {
+                            vec2 offset = vec2(cos(angle), sin(angle)) * radius * dist;
+                            color += texture2D(tDiffuse, uv + offset);
+                            total += 1.0;
+                        }
+                    }
+                    
+                    color += originalColor * 2.0;
+                    total += 2.0;
+                    
+                    return color / total;
+                }
+                
+                void main() {
+                    // Start with original color
+                    vec4 color = texture2D(tDiffuse, vUv);
+                    
+                    // Apply DOF only if enabled
+                    color = applyDOF(vUv, color);
+                    
+                    // Motion blur - only when actually moving
+                    if (motionBlur > 0.1) {
+                        vec4 blurred = vec4(0.0);
+                        float samples = 5.0;
+                        
+                        for (float i = 0.0; i < samples; i++) {
+                            float offset = (i / samples - 0.5) * motionBlur * 0.015;
+                            vec2 sampleUv = vUv + vec2(offset, offset * 0.3);
+                            blurred += texture2D(tDiffuse, sampleUv);
+                        }
+                        
+                        color = mix(color, blurred / samples, clamp(motionBlur * 0.3, 0.0, 0.5));
+                    }
+                    
+                    // Very subtle vignette
+                    vec2 center = vUv - 0.5;
+                    float vignette = 1.0 - dot(center, center) * 0.15;
+                    color.rgb *= vignette;
+                    
+                    gl_FragColor = color;
+                }
+            `
+        });
+
+        // Screen quad for post-processing
+        const postProcessQuad = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2),
+            postProcessMaterial
+        );
+        const postProcessScene = new THREE.Scene();
+        postProcessScene.add(postProcessQuad);
+        const postProcessCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        // Depth material for depth pass
+        const depthMaterial = new THREE.MeshDepthMaterial();
+        depthMaterial.depthPacking = THREE.RGBADepthPacking;
+        depthMaterial.blending = THREE.NoBlending;
+        
+        // Separate scene and camera for weapon rendering (overlay)
+        const weaponScene = new THREE.Scene();
+        // NO BACKGROUND - transparent so main scene shows through
+        weaponScene.background = null;
+        
+        const weaponCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 10);
+        
+        // Add lights to weapon scene for proper lighting
+        const weaponLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        weaponLight.position.set(1, 1, 1);
+        weaponScene.add(weaponLight);
+        
+        const weaponAmbient = new THREE.AmbientLight(0xffffff, 0.6);
+        weaponScene.add(weaponAmbient);
+
+        // Bright, Visible Lighting System
+        const ambientLight = new THREE.AmbientLight(0x666666, 0.8);
+        scene.add(ambientLight);
+
+        // Main directional light - MUCH BRIGHTER
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        mainLight.position.set(10, 25, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        mainLight.shadow.camera.near = 0.5;
+        mainLight.shadow.camera.far = 100;
+        mainLight.shadow.camera.left = -35;
+        mainLight.shadow.camera.right = 35;
+        mainLight.shadow.camera.top = 35;
+        mainLight.shadow.camera.bottom = -35;
+        mainLight.shadow.bias = -0.0001;
+        scene.add(mainLight);
+
+        // Bright warehouse ceiling lights
+        const ceilingLight1 = new THREE.PointLight(0xffaa44, 5.0, 50);
+        ceilingLight1.position.set(-15, 10, -15);
+        ceilingLight1.castShadow = true;
+        ceilingLight1.shadow.mapSize.width = 1024;
+        ceilingLight1.shadow.mapSize.height = 1024;
+        scene.add(ceilingLight1);
+
+        const ceilingLight2 = new THREE.PointLight(0xffaa44, 5.0, 50);
+        ceilingLight2.position.set(15, 10, 15);
+        ceilingLight2.castShadow = true;
+        ceilingLight2.shadow.mapSize.width = 1024;
+        ceilingLight2.shadow.mapSize.height = 1024;
+        scene.add(ceilingLight2);
+
+        const ceilingLight3 = new THREE.PointLight(0xffffff, 4.0, 45);
+        ceilingLight3.position.set(0, 12, 0);
+        ceilingLight3.castShadow = true;
+        ceilingLight3.shadow.mapSize.width = 1024;
+        ceilingLight3.shadow.mapSize.height = 1024;
+        scene.add(ceilingLight3);
+
+        // Additional fill lights for better visibility
+        const fillLight1 = new THREE.PointLight(0x8888ff, 2.0, 40);
+        fillLight1.position.set(-20, 8, 0);
+        scene.add(fillLight1);
+
+        const fillLight2 = new THREE.PointLight(0xff8888, 2.0, 40);
+        fillLight2.position.set(20, 8, 0);
+        scene.add(fillLight2);
+
+        // Ground fill light to prevent dark floor
+        const groundLight = new THREE.PointLight(0xaaaaaa, 1.5, 60);
+        groundLight.position.set(0, 2, 0);
+        scene.add(groundLight);
+
+        // Add visible light sources
+        const lightSphere1 = new THREE.Mesh(
+            new THREE.SphereGeometry(0.4, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffaa44 })
+        );
+        lightSphere1.position.copy(ceilingLight1.position);
+        scene.add(lightSphere1);
+
+        const lightSphere2 = new THREE.Mesh(
+            new THREE.SphereGeometry(0.4, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffaa44 })
+        );
+        lightSphere2.position.copy(ceilingLight2.position);
+        scene.add(lightSphere2);
+
+        const lightSphere3 = new THREE.Mesh(
+            new THREE.SphereGeometry(0.4, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        lightSphere3.position.copy(ceilingLight3.position);
+        scene.add(lightSphere3);
+
+        // Visible Arena Floor
+        const floorGeometry = new THREE.PlaneGeometry(60, 60, 50, 50);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x555555,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        floor.castShadow = false;
+        
+        // Add subtle floor variation
+        const positions = floor.geometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+            positions.setZ(i, Math.random() * 0.05);
+        }
+        positions.needsUpdate = true;
+        floor.geometry.computeVertexNormals();
+        scene.add(floor);
+
+        // Create Ultra-Realistic Walls
+        function createWall(width, height, depth, x, y, z, rotY = 0) {
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x888888,
+                roughness: 0.9
+            });
+            const wall = new THREE.Mesh(geometry, material);
+            wall.position.set(x, y, z);
+            wall.rotation.y = rotY;
+            wall.receiveShadow = true;
+            wall.castShadow = true;
+            scene.add(wall);
+            return wall;
+        }
+
+        // Warehouse walls
+        createWall(60, 15, 1, 0, 7.5, -30); // Back wall
+        createWall(60, 15, 1, 0, 7.5, 30);  // Front wall
+        createWall(1, 15, 60, -30, 7.5, 0); // Left wall
+        createWall(1, 15, 60, 30, 7.5, 0);  // Right wall
+
+        // Create ceiling beams
+        for (let i = -20; i <= 20; i += 10) {
+            const beam = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 1, 60),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            beam.position.set(i, 14, 0);
+            beam.castShadow = true;
+            scene.add(beam);
+        }
+
+        // Create Cover Boxes
+        const boxes = [];
+        function createCoverBox(width, height, depth, x, z, color = 0x8B4513) {
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: color,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const box = new THREE.Mesh(geometry, material);
+            box.position.set(x, height / 2, z);
+            box.castShadow = true;
+            box.receiveShadow = true;
+            scene.add(box);
+            boxes.push(box);
+            return box;
+        }
+
+        // Wooden crates layout (CS:GO aim map style)
+        // Player side
+        createCoverBox(3, 2, 3, -10, -15);
+        createCoverBox(2, 1.5, 2, -5, -18);
+        createCoverBox(3, 2, 3, 10, -15);
+        createCoverBox(4, 1.8, 2, 0, -12);
+
+        // Center area
+        createCoverBox(5, 2.5, 3, -8, 0, 0x654321);
+        createCoverBox(5, 2.5, 3, 8, 0, 0x654321);
+        createCoverBox(2, 1.5, 4, 0, 2);
+
+        // Enemy side
+        createCoverBox(3, 2, 3, -10, 15);
+        createCoverBox(2, 1.5, 2, -5, 18);
+        createCoverBox(3, 2, 3, 10, 15);
+        createCoverBox(4, 1.8, 2, 0, 12);
+
+        // Additional scattered boxes
+        createCoverBox(2, 1.2, 2, -15, -8);
+        createCoverBox(2, 1.2, 2, 15, 8);
+        createCoverBox(1.5, 1, 1.5, -12, 5);
+        createCoverBox(1.5, 1, 1.5, 12, -5);
+
+        // Metal containers (red)
+        createCoverBox(4, 3, 4, -18, 0, 0x8B0000);
+        createCoverBox(4, 3, 4, 18, 0, 0x8B0000);
+
+        // Player Setup - spawn position
+        // In multiplayer, host spawns on player side (z = -20), client spawns on enemy side (z = 20)
+        // In single player, always spawn on player side (z = -20)
+        // Note: isHost might not be set yet, so we'll set spawn position when connection is established
+        camera.position.set(0, 1.7, -20); // Default to player side
+        const playerVelocity = new THREE.Vector3();
+        const playerDirection = new THREE.Vector3();
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let canJump = true;
+        
+        // Add local player username display
+        let localPlayerUsernameSprite = null;
+        function createLocalPlayerUsernameDisplay() {
+            console.log('Creating local player username display...');
+            console.log('Camera position:', camera.position);
+            console.log('Player username:', gameState.playerUsername);
+            
+            if (localPlayerUsernameSprite) {
+                scene.remove(localPlayerUsernameSprite);
+            }
+            
+            const username = gameState.playerUsername || 'Player';
+            localPlayerUsernameSprite = createUsernameSprite(username);
+            // Position above camera's initial position
+            localPlayerUsernameSprite.position.set(camera.position.x, camera.position.y + 0.8, camera.position.z);
+            scene.add(localPlayerUsernameSprite);
+            
+            console.log('Username sprite created and added to scene at:', localPlayerUsernameSprite.position);
+            console.log('Sprite visible:', localPlayerUsernameSprite.visible);
+            console.log('Sprite scale:', localPlayerUsernameSprite.scale);
+        }
+
+        // Realistic 3D Weapon Models
+        let currentWeaponMesh = null;
+        let weaponBobOffset = 0;
+        let weaponRecoilOffset = 0;
+
+        // Create detailed AK-47 model
+        function createAK47() {
+            const weaponGroup = new THREE.Group();
+            
+            // Receiver (main body)
+            const receiverGeo = new THREE.BoxGeometry(0.04, 0.06, 0.35);
+            const receiverMat = new THREE.MeshStandardMaterial({ 
+                color: 0x2a2a2a, 
+                metalness: 0.7, 
+                roughness: 0.4 
+            });
+            const receiver = new THREE.Mesh(receiverGeo, receiverMat);
+            receiver.position.set(0, 0, -0.1);
+            weaponGroup.add(receiver);
+            
+            // Barrel
+            const barrelGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.25, 12);
+            const barrelMat = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a1a, 
+                metalness: 0.9, 
+                roughness: 0.2 
+            });
+            const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(0, 0.01, -0.35);
+            weaponGroup.add(barrel);
+            
+            // Gas tube (top of barrel)
+            const gasTubeGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.2, 8);
+            const gasTube = new THREE.Mesh(gasTubeGeo, barrelMat);
+            gasTube.rotation.x = Math.PI / 2;
+            gasTube.position.set(0, 0.025, -0.3);
+            weaponGroup.add(gasTube);
+            
+            // Magazine
+            const magGeo = new THREE.BoxGeometry(0.025, 0.12, 0.08);
+            const magMat = new THREE.MeshStandardMaterial({ 
+                color: 0x3a2a1a, 
+                metalness: 0.3, 
+                roughness: 0.8 
+            });
+            const magazine = new THREE.Mesh(magGeo, magMat);
+            magazine.position.set(0, -0.08, -0.05);
+            magazine.rotation.x = -0.1;
+            weaponGroup.add(magazine);
+            
+            // Stock
+            const stockGeo = new THREE.BoxGeometry(0.03, 0.04, 0.15);
+            const stockMat = new THREE.MeshStandardMaterial({ 
+                color: 0x4a3a2a, 
+                metalness: 0.1, 
+                roughness: 0.9 
+            });
+            const stock = new THREE.Mesh(stockGeo, stockMat);
+            stock.position.set(0, 0.01, 0.15);
+            weaponGroup.add(stock);
+            
+            // Pistol grip
+            const gripGeo = new THREE.BoxGeometry(0.025, 0.08, 0.04);
+            const grip = new THREE.Mesh(gripGeo, stockMat);
+            grip.position.set(0, -0.05, 0.02);
+            grip.rotation.x = 0.3;
+            weaponGroup.add(grip);
+            
+            // Front sight
+            const sightGeo = new THREE.BoxGeometry(0.015, 0.02, 0.005);
+            const sightMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.8 });
+            const frontSight = new THREE.Mesh(sightGeo, sightMat);
+            frontSight.position.set(0, 0.04, -0.4);
+            weaponGroup.add(frontSight);
+            
+            // Rear sight
+            const rearSight = new THREE.Mesh(sightGeo, sightMat);
+            rearSight.position.set(0, 0.04, 0.05);
+            weaponGroup.add(rearSight);
+            
+            // Muzzle brake
+            const muzzleGeo = new THREE.CylinderGeometry(0.012, 0.01, 0.03, 8);
+            const muzzle = new THREE.Mesh(muzzleGeo, barrelMat);
+            muzzle.rotation.x = Math.PI / 2;
+            muzzle.position.set(0, 0.01, -0.48);
+            weaponGroup.add(muzzle);
+            
+            weaponGroup.position.set(0.12, -0.12, -0.25);
+            weaponGroup.rotation.set(0, 0, 0);
+            
+            // Disable shadows for weapon (first-person view)
+            weaponGroup.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = false;
+                    child.receiveShadow = false;
+                }
+            });
+            
+            return weaponGroup;
+        }
+
+        // Create detailed AWP Sniper
+        function createAWP() {
+            const weaponGroup = new THREE.Group();
+            
+            // Main body (longer, sleeker)
+            const bodyGeo = new THREE.BoxGeometry(0.035, 0.05, 0.5);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: 0x1a3a2a, 
+                metalness: 0.6, 
+                roughness: 0.3 
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.set(0, 0, -0.15);
+            weaponGroup.add(body);
+            
+            // Long barrel
+            const barrelGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.4, 16);
+            const barrelMat = new THREE.MeshStandardMaterial({ 
+                color: 0x0a0a0a, 
+                metalness: 0.95, 
+                roughness: 0.1 
+            });
+            const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(0, 0.01, -0.5);
+            weaponGroup.add(barrel);
+            
+            // Scope
+            const scopeBodyGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.15, 16);
+            const scopeMat = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a1a, 
+                metalness: 0.8, 
+                roughness: 0.2 
+            });
+            const scopeBody = new THREE.Mesh(scopeBodyGeo, scopeMat);
+            scopeBody.rotation.z = Math.PI / 2;
+            scopeBody.position.set(0, 0.06, -0.1);
+            weaponGroup.add(scopeBody);
+            
+            // Scope lens (front)
+            const lensGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.01, 16);
+            const lensMat = new THREE.MeshStandardMaterial({ 
+                color: 0x4444aa, 
+                metalness: 0.9, 
+                roughness: 0.05,
+                emissive: 0x111133
+            });
+            const frontLens = new THREE.Mesh(lensGeo, lensMat);
+            frontLens.rotation.z = Math.PI / 2;
+            frontLens.position.set(0, 0.06, -0.175);
+            weaponGroup.add(frontLens);
+            
+            // Scope lens (rear)
+            const rearLens = new THREE.Mesh(lensGeo, lensMat);
+            rearLens.rotation.z = Math.PI / 2;
+            rearLens.position.set(0, 0.06, -0.025);
+            weaponGroup.add(rearLens);
+            
+            // Bipod legs
+            const bipodGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.08, 6);
+            const bipodMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.7 });
+            const bipodLeft = new THREE.Mesh(bipodGeo, bipodMat);
+            bipodLeft.position.set(-0.03, -0.05, -0.35);
+            bipodLeft.rotation.z = 0.3;
+            weaponGroup.add(bipodLeft);
+            
+            const bipodRight = new THREE.Mesh(bipodGeo, bipodMat);
+            bipodRight.position.set(0.03, -0.05, -0.35);
+            bipodRight.rotation.z = -0.3;
+            weaponGroup.add(bipodRight);
+            
+            // Stock
+            const stockGeo = new THREE.BoxGeometry(0.04, 0.05, 0.12);
+            const stockMat = new THREE.MeshStandardMaterial({ 
+                color: 0x3a2a1a, 
+                metalness: 0.2, 
+                roughness: 0.8 
+            });
+            const stock = new THREE.Mesh(stockGeo, stockMat);
+            stock.position.set(0, 0.01, 0.25);
+            weaponGroup.add(stock);
+            
+            // Cheek rest
+            const cheekGeo = new THREE.BoxGeometry(0.035, 0.02, 0.08);
+            const cheekRest = new THREE.Mesh(cheekGeo, stockMat);
+            cheekRest.position.set(0, 0.045, 0.2);
+            weaponGroup.add(cheekRest);
+            
+            weaponGroup.position.set(0.15, -0.15, -0.3);
+            weaponGroup.rotation.set(0, 0, 0);
+            
+            // Disable shadows for weapon (first-person view)
+            weaponGroup.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = false;
+                    child.receiveShadow = false;
+                }
+            });
+            
+            return weaponGroup;
+        }
+
+                        // Create detailed Desert Eagle
+
+                        function createDesertEagle() {
+
+                            // ... (Desert Eagle creation code) ...
+
+                        }
+
+                
+
+                                // Weapon sway and animation
+
+                
+
+                                function updateWeaponPosition(deltaTime) {
+
+                
+
+                                    if (!currentWeaponMesh) return;
+            
+            weaponSwayTime += deltaTime;
+            
+            // Get base position from weapon type
+            let baseX = 0.12, baseY = -0.12, baseZ = -0.25;
+            if (gameState.currentWeapon === 'sniper') {
+                baseX = 0.15; baseY = -0.15; baseZ = -0.3;
+            } else if (gameState.currentWeapon === 'pistol') {
+                baseX = 0.1; baseY = -0.1; baseZ = -0.2;
+            }
+            
+            // Enhanced movement bob with better curves
+            let bobX = 0, bobY = 0, bobZ = 0;
+            if (gameState.isMoving) {
+                const speed = gameState.movementSpeed;
+                const sprintMultiplier = gameState.isSprinting ? 1.8 : 1;
+                weaponBobOffset += deltaTime * 8 * speed * sprintMultiplier;
+                
+                // More realistic walking bob
+                bobX = Math.sin(weaponBobOffset) * 0.015 * speed;
+                bobY = Math.abs(Math.cos(weaponBobOffset * 0.5)) * 0.02 * speed;
+                bobZ = Math.sin(weaponBobOffset * 0.7) * 0.01 * speed;
+            } else {
+                // Smooth return to idle
+                weaponBobOffset = lerp(weaponBobOffset, 0, deltaTime * 5);
+            }
+            
+            // Idle weapon sway (breathing effect)
+            if (!gameState.isMoving && weaponRecoilOffset < 0.01) {
+                weaponIdleSway.x = Math.sin(weaponSwayTime * 0.5) * 0.003;
+                weaponIdleSway.y = Math.cos(weaponSwayTime * 0.7) * 0.002;
+                weaponIdleSway.z = Math.sin(weaponSwayTime * 0.3) * 0.001;
+            } else {
+                // Smooth return to zero
+                weaponIdleSway.x = lerp(weaponIdleSway.x, 0, deltaTime * 3);
+                weaponIdleSway.y = lerp(weaponIdleSway.y, 0, deltaTime * 3);
+                weaponIdleSway.z = lerp(weaponIdleSway.z, 0, deltaTime * 3);
+            }
+            
+            // Smooth recoil recovery with curve
+            if (weaponRecoilOffset > 0) {
+                const recoverySpeed = 6 + weaponRecoilOffset * 10; // Faster recovery when more recoil
+                weaponRecoilOffset -= deltaTime * recoverySpeed;
+                if (weaponRecoilOffset < 0) weaponRecoilOffset = 0;
+                
+                // Recoil rotation (smooth, not random)
+                weaponRecoilRotation.x = weaponRecoilOffset * 0.8;
+                weaponRecoilRotation.y = lerp(weaponRecoilRotation.y, weaponRecoilY, deltaTime * 10);
+            } else {
+                // Smooth rotation recovery
+                weaponRecoilRotation.x = lerp(weaponRecoilRotation.x, 0, deltaTime * 8);
+                weaponRecoilRotation.y = lerp(weaponRecoilRotation.y, 0, deltaTime * 8);
+                weaponRecoilY = lerp(weaponRecoilY, 0, deltaTime * 8);
+            }
+            
+            // Apply all offsets to base position
+            currentWeaponMesh.position.x = baseX + bobX + weaponIdleSway.x;
+            currentWeaponMesh.position.y = baseY + bobY + weaponIdleSway.y;
+            currentWeaponMesh.position.z = baseZ + weaponRecoilOffset + bobZ + weaponIdleSway.z;
+            
+            // Apply rotations
+            currentWeaponMesh.rotation.x = weaponRecoilRotation.x + weaponRecoilOffset * 0.3;
+            currentWeaponMesh.rotation.y = weaponRecoilRotation.y;
+            currentWeaponMesh.rotation.z = weaponIdleSway.z * 2;
+        }
+
+        // Apply weapon recoil
+        function applyWeaponRecoil(amount) {
+            weaponRecoilOffset = amount;
+            // Set random horizontal recoil direction (only when applying recoil)
+            weaponRecoilY = (Math.random() - 0.5) * amount * 0.3;
+        }
+
+        // Switch weapon model
+        function switchWeaponModel(weaponType) {
+            // Remove current weapon
+            if (currentWeaponMesh) {
+                weaponCamera.remove(currentWeaponMesh);
+            }
+            
+            // Create new weapon
+            switch(weaponType) {
+                case 'rifle':
+                    currentWeaponMesh = createAK47();
+                    break;
+                case 'sniper':
+                    currentWeaponMesh = createAWP();
+                    break;
+                case 'pistol':
+                    currentWeaponMesh = createDesertEagle();
+                    break;
+            }
+            
+            // Store base position
+            currentWeaponMesh.userData.baseZ = currentWeaponMesh.position.z;
+            
+            // Add to weapon camera (camera-relative positioning)
+            weaponCamera.add(currentWeaponMesh);
+            console.log('Weapon added to weaponCamera:', weaponType);
+        }
+
+        // DEBUG: Add a simple test cube to weapon scene to verify rendering
+        const testCube = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 0.1, 0.1),
+            new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false })
+        );
+        testCube.position.set(0.3, -0.15, -0.5);
+        weaponScene.add(testCube);
+        console.log('Test cube added to weaponScene at:', testCube.position);
+        
+        // Initialize with rifle
+        switchWeaponModel('rifle');
+        
+        // Debug: Log weapon info
+        console.log('Weapon initialized:', currentWeaponMesh);
+        console.log('Weapon position:', currentWeaponMesh.position);
+        console.log('Weapon children:', currentWeaponMesh.children.length);
+        console.log('Camera children:', camera.children.length);
+        
+        // Make sure weapon is visible
+        if (currentWeaponMesh) {
+            currentWeaponMesh.visible = true;
+            currentWeaponMesh.traverse((child) => {
+                if (child.isMesh) {
+                    child.visible = true;
+                    console.log('Weapon part:', child.geometry.type, 'Material:', child.material.type);
+                }
+            });
+        }
+
+        // Mouse Controls - Using Euler angles for proper rotation
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        const PI_2 = Math.PI / 2;
+        const sensitivity = 0.002; // Adjust this value: lower = slower, higher = faster
+
+        // Pointer Lock handling
+        let isPointerLocked = false;
+
+        document.addEventListener('pointerlockchange', () => {
+            isPointerLocked = document.pointerLockElement === renderer.domElement;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!gameState.started || gameState.paused || !isPointerLocked || gameState.isDying) return;
+            
+            const movementX = e.movementX || 0;
+            const movementY = e.movementY || 0;
+            
+            euler.setFromQuaternion(camera.quaternion);
+            
+            euler.y -= movementX * sensitivity;
+            euler.x -= movementY * sensitivity;
+            
+            // Clamp vertical rotation to prevent flipping
+            euler.x = Math.max(-PI_2 + 0.1, Math.min(PI_2 - 0.1, euler.x));
+            
+            camera.quaternion.setFromEuler(euler);
+        });
+
+        // Keyboard Controls
+        let spacePressed = false;
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.started || gameState.isDying) return;
+            
+            switch(e.code) {
+                case 'KeyZ': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyQ': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': spacePressed = true; break;
+                case 'ShiftLeft': gameState.isSprinting = true; break;
+                // A and E are used for leaning, common in FPS games.
+                // Note: On AZERTY keyboards, A is next to ZQSD.
+                case 'KeyA': gameState.leanTarget = 1; break;
+                case 'KeyE': gameState.leanTarget = -1; break;
+                case 'KeyR': reload(); break;
+                case 'Escape': togglePause(); break;
+                case 'Digit1': switchWeapon('rifle'); break;
+                case 'Digit2': switchWeapon('pistol'); break;
+                case 'Digit3': switchWeapon('sniper'); break;
+                case 'KeyF': 
+                    // Toggle Depth of Field
+                    postProcessMaterial.uniforms.enableDOF.value = postProcessMaterial.uniforms.enableDOF.value > 0.5 ? 0.0 : 1.0;
+                    console.log('Depth of Field:', postProcessMaterial.uniforms.enableDOF.value > 0.5 ? 'ON' : 'OFF');
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyZ': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyQ': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'Space': spacePressed = false; break;
+                case 'ShiftLeft': gameState.isSprinting = false; break;
+                case 'KeyA': if (gameState.leanTarget === 1) gameState.leanTarget = 0; break;
+                case 'KeyE': if (gameState.leanTarget === -1) gameState.leanTarget = 0; break;
+            }
+        });
+
+        // Shooting
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && gameState.started && !gameState.paused && !gameState.isDying) {
+                shoot();
+            }
+        });
+
+        // Enemy AI or Other Player
+        let enemy;
+        
+        // Create enemy/other player based on mode
+        console.log('Creating enemy/player, isMultiplayer:', isMultiplayer);
+        if (isMultiplayer) {
+            // Don't create otherPlayer here - wait for connection to establish
+            // This prevents duplicate creation
+            console.log('Multiplayer mode - otherPlayer will be created when connection is established');
+            enemy = null; // Will be set to otherPlayer when created
+        } else {
+            // Single player mode - create AI enemy
+            console.log('Creating AI enemy');
+            try {
+                const enemyGeometry = new THREE.CapsuleGeometry(0.5, 1.5, 4, 8);
+                const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            } catch (e) {
+                // Fallback to cylinder if CapsuleGeometry is not available
+                const fallbackGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 8);
+                const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                enemy = new THREE.Mesh(fallbackGeometry, enemyMaterial);
+            }
+            enemy.position.set(0, 1.7, 20); // Enemy side
+            enemy.castShadow = true;
+            scene.add(enemy);
+        }
+        
+        // Function to create other player if not already created (for late multiplayer init)
+        window.createMultiplayerOpponent = function() {
+            // Remove any existing otherPlayer/enemy duplicates first
+            if (otherPlayer && scene) {
+                scene.remove(otherPlayer);
+            }
+            if (enemy && scene && enemy !== otherPlayer && isMultiplayer) {
+                // Remove duplicate enemy in multiplayer mode
+                scene.remove(enemy);
+                enemy = null;
+            }
+            
+            if (!otherPlayer && scene) {
+                console.log('✅ Creating other player mesh (late init)');
+                // Other player always spawns on enemy side (opposite from you)
+                // If you're host (spawned at z=-20), otherPlayer spawns at z=20
+                // If you're client (spawned at z=20), otherPlayer spawns at z=-20
+                const otherPlayerSpawnZ = isHost ? 20 : -20; // Opposite side from player
+                otherPlayer = createOtherPlayerMesh(otherPlayerSpawnZ > 0);
+                enemy = otherPlayer; // Set enemy reference
+                scene.add(otherPlayer);
+                
+                // Initialize target position to current position
+                targetOtherPlayerPosition.copy(otherPlayer.position);
+                
+                // Make sure it's visible
+                otherPlayer.visible = true;
+                otherPlayer.castShadow = true;
+                otherPlayer.receiveShadow = true;
+                
+                console.log('✅ Other player added to scene at:', otherPlayer.position);
+                console.log('✅ Player position:', camera.position.x.toFixed(2), camera.position.y.toFixed(2), camera.position.z.toFixed(2));
+                console.log('✅ otherPlayer in scene:', scene.children.includes(otherPlayer));
+            } else if (otherPlayer && scene && !scene.children.includes(otherPlayer)) {
+                console.log('⚠️ otherPlayer exists but not in scene, adding...');
+                scene.add(otherPlayer);
+            }
+        };
+
+        let enemyState = {
+            position: new THREE.Vector3(0, 1.7, 20),
+            targetPosition: new THREE.Vector3(0, 1.7, 20),
+            lastShot: 0,
+            shootDelay: 1500,
+            moving: false,
+            isDying: false,
+            deathTimer: 0
+        };
+
+        function updateEnemy(deltaTime) {
+            if (!gameState.started || gameState.paused) return;
+
+            if (enemyState.isDying) {
+                enemyState.deathTimer += deltaTime;
+                const deathProgress = Math.min(enemyState.deathTimer / 1.5, 1);
+
+                enemy.rotation.x = lerp(enemy.rotation.x, -Math.PI / 2, deltaTime * 5);
+                enemy.rotation.z = lerp(enemy.rotation.z, (Math.random() - 0.5) * 2, deltaTime * 5);
+                enemy.position.y = lerp(enemy.position.y, 0.5, deltaTime * 5);
+
+                if (deathProgress >= 1) {
+                    enemy.visible = false;
+                }
+                return;
+            }
+            
+            // Skip AI logic in multiplayer mode (other player controls their own character)
+            if (isMultiplayer) {
+                // In multiplayer, make sure we're using otherPlayer, not a duplicate enemy
+                if (enemy && enemy !== otherPlayer && scene) {
+                    // Remove duplicate enemy
+                    scene.remove(enemy);
+                    enemy = otherPlayer;
+                }
+                return;
+            }
+            
+            // Only run AI logic if enemy exists and is not the otherPlayer
+            if (!enemy || enemy === otherPlayer) return;
+
+            // AI Movement
+            if (!enemyState.moving || enemy.position.distanceTo(enemyState.targetPosition) < 0.5) {
+                // Choose new random position near cover
+                const randomBox = boxes[Math.floor(Math.random() * boxes.length)];
+                enemyState.targetPosition.set(
+                    randomBox.position.x + (Math.random() - 0.5) * 5,
+                    1.7,
+                    randomBox.position.z + (Math.random() - 0.5) * 5
+                );
+                enemyState.moving = true;
+            }
+
+            // Move towards target
+            const direction = new THREE.Vector3()
+                .subVectors(enemyState.targetPosition, enemy.position)
+                .normalize();
+            
+            enemy.position.add(direction.multiplyScalar(deltaTime * 2));
+            enemy.position.y = 1.7;
+
+            // Look at player
+            enemy.lookAt(camera.position);
+
+            // AI Shooting
+            const now = Date.now();
+            if (now - enemyState.lastShot > enemyState.shootDelay) {
+                const distanceToPlayer = enemy.position.distanceTo(camera.position);
+                const accuracy = Math.max(0.3, 1 - distanceToPlayer / 30);
+                
+                if (Math.random() < accuracy * 0.3) {
+                    enemyShoot();
+                }
+                enemyState.lastShot = now;
+            }
+        }
+
+        function enemyShoot() {
+            // Visual muzzle flash
+            const flash = new THREE.PointLight(0xffff00, 2, 5);
+            flash.position.copy(enemy.position);
+            scene.add(flash);
+            setTimeout(() => scene.remove(flash), 50);
+
+            // Play enemy shooting sound with distance-based volume
+            const shootVolume = calculateDistanceVolume(enemy.position, 60, 0.05);
+            playShootSound('rifle', shootVolume);
+
+            // Check if hit player
+            const accuracy = 0.2 + Math.random() * 0.3;
+            if (Math.random() < accuracy) {
+                const damage = 15 + Math.floor(Math.random() * 15);
+                gameState.playerHealth -= damage;
+                updateHUD();
+                showDamage();
+
+                if (gameState.playerHealth <= 0) {
+                    playerDied();
+                }
+            }
+        }
+
+        function switchWeapon(weaponType) {
+            if (gameState.isReloading) return;
+            
+            const weapon = weapons[weaponType];
+            gameState.currentWeapon = weaponType;
+            gameState.currentAmmo = weapon.maxAmmo;
+            gameState.reserveAmmo = weapon.reserveAmmo;
+            gameState.maxAmmo = weapon.maxAmmo;
+            
+            // Switch 3D weapon model
+            switchWeaponModel(weaponType);
+            
+            updateHUD();
+        }
+
+        function shoot() {
+            if (!gameState.canShoot || gameState.isReloading || gameState.currentAmmo <= 0) {
+                return;
+            }
+
+            const weapon = weapons[gameState.currentWeapon];
+            
+            gameState.currentAmmo--;
+            gameState.canShoot = false;
+            updateHUD();
+
+            // Play weapon sound
+            playShootSound(weapon.type);
+
+            // Crosshair animation
+            const crosshair = document.getElementById('crosshair');
+            crosshair.classList.add('shooting');
+            setTimeout(() => crosshair.classList.remove('shooting'), 100);
+
+            // Enhanced Camera Shake and Weapon Recoil based on weapon (Realistic values)
+            let shakeIntensity = 0;
+            let recoilAmount = 0;
+            let shakePattern = 'default';
+            
+            if (weapon.type === 'rifle') {
+                shakeIntensity = 0.08; // Reduced from 0.18
+                recoilAmount = 0.06; // Reduced from 0.1
+                shakePattern = 'rifle';
+            } else if (weapon.type === 'pistol') {
+                shakeIntensity = 0.06; // Reduced from 0.12
+                recoilAmount = 0.04; // Reduced from 0.06
+                shakePattern = 'pistol';
+            } else if (weapon.type === 'sniper') {
+                shakeIntensity = 0.15; // Reduced from 0.4
+                recoilAmount = 0.12; // Reduced from 0.18
+                shakePattern = 'sniper';
+            }
+            
+            applyCameraShake(shakeIntensity, shakePattern);
+            applyWeaponRecoil(recoilAmount);
+
+            // Enhanced Muzzle flash
+            const flash = new THREE.PointLight(0xffaa00, 5, 12);
+            flash.position.copy(camera.position);
+            const flashDirection = new THREE.Vector3();
+            camera.getWorldDirection(flashDirection);
+            flash.position.add(flashDirection.multiplyScalar(0.8));
+            scene.add(flash);
+            
+            // Add flash glow
+            const flashGlow = new THREE.PointLight(0xff6600, 3, 6);
+            flashGlow.position.copy(flash.position);
+            scene.add(flashGlow);
+            
+            setTimeout(() => {
+                scene.remove(flash);
+                scene.remove(flashGlow);
+            }, 50);
+
+            // Weapon-specific recoil (more realistic, reduced values)
+            let recoilX = 0, recoilY = 0;
+            if (weapon.type === 'rifle') {
+                recoilX = Math.random() * 0.015 + 0.01; // Reduced from 0.02-0.05
+                recoilY = (Math.random() - 0.5) * 0.008; // Reduced from 0.015
+            } else if (weapon.type === 'pistol') {
+                recoilX = Math.random() * 0.018 + 0.012; // Reduced from 0.025-0.065
+                recoilY = (Math.random() - 0.5) * 0.01; // Reduced from 0.02
+            } else if (weapon.type === 'sniper') {
+                recoilX = Math.random() * 0.025 + 0.02; // Reduced from 0.05-0.11
+                recoilY = (Math.random() - 0.5) * 0.015; // Reduced from 0.03
+            }
+            
+            euler.x -= recoilX;
+            euler.y += recoilY;
+            camera.quaternion.setFromEuler(euler);
+
+            // Send shoot event in multiplayer
+            if (isMultiplayer) {
+                sendToOther({ type: 'shoot' });
+            }
+
+            // Raycast for hit detection
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+
+            const objectsToIntersect = [...boxes];
+            if (enemy) {
+                objectsToIntersect.push(enemy);
+            }
+            
+            const intersects = raycaster.intersectObjects(objectsToIntersect, true);
+            
+            if (intersects.length > 0) {
+                let hitEnemy = false;
+                if (enemy) {
+                    let currentObject = intersects[0].object;
+                    while (currentObject) {
+                        if (currentObject === enemy) {
+                            hitEnemy = true;
+                            break;
+                        }
+                        currentObject = currentObject.parent;
+                    }
+                }
+
+                if (hitEnemy) {
+                    // Hit enemy
+                    const damage = weapon.damage + Math.floor(Math.random() * 10);
+                    
+                    // In multiplayer, send hit to other player
+                    if (isMultiplayer) {
+                        sendToOther({
+                            type: 'hit',
+                            damage: damage,
+                            target: otherPlayerId
+                        });
+                    } else {
+                        gameState.enemyHealth -= damage;
+                    }
+                    showHitMarker();
+                    const hitVolume = calculateDistanceVolume(enemy.position);
+                    playHitSound(hitVolume);
+
+                    if (!isMultiplayer && gameState.enemyHealth <= 0) {
+                        enemyDied();
+                    }
+                }
+            }
+
+            // Shoot cooldown based on weapon fire rate
+            setTimeout(() => {
+                gameState.canShoot = true;
+            }, weapon.fireRate);
+        }
+
+        function reload() {
+            if (gameState.isReloading || gameState.currentAmmo === gameState.maxAmmo || gameState.reserveAmmo === 0) {
+                return;
+            }
+
+            const weapon = weapons[gameState.currentWeapon];
+            gameState.isReloading = true;
+            
+            // Show reload indicator
+            document.getElementById('reloadIndicator').style.display = 'block';
+            
+            // Play reload sound
+            playReloadSound();
+            
+            setTimeout(() => {
+                const ammoNeeded = gameState.maxAmmo - gameState.currentAmmo;
+                const ammoToReload = Math.min(ammoNeeded, gameState.reserveAmmo);
+                
+                gameState.currentAmmo += ammoToReload;
+                gameState.reserveAmmo -= ammoToReload;
+                gameState.isReloading = false;
+                
+                // Hide reload indicator
+                document.getElementById('reloadIndicator').style.display = 'none';
+                
+                updateHUD();
+            }, weapon.reloadTime);
+        }
+
+        function showHitMarker() {
+            const marker = document.getElementById('hitMarker');
+            marker.style.display = 'block';
+            setTimeout(() => {
+                marker.style.display = 'none';
+            }, 100);
+        }
+
+        showDamage = function() {
+            const overlay = document.getElementById('damageOverlay');
+            overlay.style.opacity = '1';
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+            }, 200);
+        }
+
+        function respawnEnemy() {
+            enemyState.isDying = false;
+            gameState.enemyHealth = 100;
+            enemy.visible = true;
+            enemy.position.set(
+                (Math.random() - 0.5) * 20,
+                1.7,
+                15 + Math.random() * 10
+            );
+            enemy.rotation.set(0, 0, 0);
+
+
+
+            // Stop other player death sound if active
+            if (activeOtherPlayerDeathSound.gainNode) { // Check if a sound is active
+                activeOtherPlayerDeathSound.gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+                activeOtherPlayerDeathSound.gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                activeOtherPlayerDeathSound.source.stop(audioContext.currentTime + 0.1); // Explicitly stop the source immediately
+                activeOtherPlayerDeathSound = { source: null, gainNode: null }; // Nullify immediately
+            }
+        }
+
+        function enemyDied() {
+            if (enemyState.isDying) return;
+
+            gameState.playerScore++;
+            enemyState.isDying = true;
+            enemyState.deathTimer = 0;
+            
+            // Note: enemySpeakerIcon is for multiplayer mode only - do not show it in single-player mode
+
+            addKillFeedMessage('You eliminated Enemy');
+            updateHUD();
+
+            if (gameState.playerScore >= 10) {
+                endGame(true);
+            } else {
+                setTimeout(respawnEnemy, 3000);
+            }
+        }
+
+        function respawn() {
+            console.log('respawn called. Current time:', audioContext.currentTime);
+            const deathScreen = document.getElementById('deathScreen');
+            deathScreen.style.opacity = 0;
+            deathScreen.style.background = 'rgba(0,0,0,0)';
+
+            gameState.playerHealth = 100;
+            gameState.isDying = false;
+            
+            // Don't stop death sound immediately - let it continue playing
+            // The sound will naturally fade out based on its original schedule
+            console.log('Death sound continues playing after respawn (if active)');
+            
+            // Only hide the speaker icon overlay when respawning
+            const speakerIcon = document.getElementById('speakerIconOverlay');
+            if (speakerIcon) speakerIcon.style.display = 'none';
+
+            // Respawn player
+            camera.position.set(
+                (Math.random() - 0.5) * 20,
+                1.7,
+                -15 - Math.random() * 10
+            );
+            camera.rotation.set(0, 0, 0);
+
+
+            // Reset movement state to prevent carrying momentum after respawn
+            moveForward = false;
+            moveBackward = false;
+            moveLeft = false;
+            moveRight = false;
+
+            updateHUD();
+        }
+
+        playerDied = function() {
+            if (gameState.isDying) return;
+
+            console.log('playerDied called. Current time:', audioContext.currentTime);
+            gameState.enemyScore++;
+            gameState.isDying = true;
+            gameState.deathTimer = 0;
+
+            const deathScreen = document.getElementById('deathScreen');
+            deathScreen.style.opacity = 1;
+            deathScreen.style.background = 'rgba(0,0,0,0.8)';
+
+            // Clear any pending fade timeouts from previous deaths
+            if (gameState.pendingFadeTimeout) {
+                clearTimeout(gameState.pendingFadeTimeout);
+                gameState.pendingFadeTimeout = null;
+            }
+            
+            // Test function for rapid death simulation
+            window.testRapidDeaths = function() {
+                console.log('🧪 Testing rapid deaths...');
+                playerDied();
+                setTimeout(() => {
+                    console.log('🧪 Second death after 500ms');
+                    playerDied();
+                }, 500);
+                setTimeout(() => {
+                    console.log('🧪 Third death after 1000ms');
+                    playerDied();
+                }, 1000);
+            };
+
+            // Stop any existing death sound before playing new one
+            if (activeDeathSound && activeDeathSound.source) {
+                try {
+                    activeDeathSound.source.stop();
+                    activeDeathSound.source.disconnect();
+                    activeDeathSound.gainNode.disconnect();
+                } catch (e) {
+                    console.log('Error stopping previous death sound:', e);
+                }
+                activeDeathSound = { source: null, gainNode: null };
+            }
+
+            // Play death sound with offset, duration, and fade out
+            if (deathSoundBuffer) {
+                const soundDuration = 8; // Extended duration - sound continues much longer after respawn
+                const fadeOutTime = 3.0; // Fade out starts after 5 seconds, takes 3 seconds to complete
+                const { source, gainNode } = playSound(deathSoundBuffer, 1, 1); // Play from 1s
+                activeDeathSound = { source, gainNode }; // Store both
+                console.log('Death sound started. Source:', source, 'GainNode:', gainNode);
+
+                // Show speaker icon overlay
+                const speakerIcon = document.getElementById('speakerIconOverlay');
+                if (speakerIcon) {
+                    speakerIcon.style.display = 'block';
+                    speakerIcon.style.opacity = '1';
+                    speakerIcon.style.transition = ''; // Clear any previous transitions
+                }
+
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime); // Set initial gain
+                gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime + 5); // Keep full volume for 5 seconds
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + soundDuration); // Fade out over last 3 seconds
+                source.stop(audioContext.currentTime + soundDuration);
+
+                // Fade speaker icon with the sound
+                if (speakerIcon) {
+                    // Keep icon visible for 5 seconds, then fade over 3 seconds
+                    gameState.pendingFadeTimeout = setTimeout(() => {
+                        if (speakerIcon.style.display === 'block') {
+                            speakerIcon.style.transition = 'opacity 3s ease-out';
+                            speakerIcon.style.opacity = '0';
+                        }
+                    }, 5000);
+                }
+
+                // Also, ensure the source disconnects when it ends
+                source.onended = () => {
+                    console.log('Death sound onended fired. Source:', source, 'GainNode:', gainNode);
+                    source.disconnect();
+                    gainNode.disconnect();
+                    if (activeDeathSound.source === source) { // Only nullify if it's still the active one
+                        activeDeathSound = { source: null, gainNode: null };
+                        console.log('activeDeathSound nullified by onended.');
+                        // Hide speaker icon overlay after fade completes (only if still current)
+                        if (speakerIcon && !gameState.isDead) {
+                            speakerIcon.style.display = 'none';
+                            speakerIcon.style.transition = '';
+                            speakerIcon.style.opacity = '1';
+                        }
+                    }
+                };
+            }
+
+            addKillFeedMessage('Enemy eliminated You');
+            updateHUD();
+
+            if (gameState.enemyScore >= 10) {
+                endGame(false);
+            } else {
+                setTimeout(respawn, 3000); // Fixed respawn timer - independent of sound duration
+            }
+            console.log('Respawn scheduled for:', audioContext.currentTime + 5);
+        }
+
+        addKillFeedMessage = function(message) {
+            const feed = document.getElementById('killFeed');
+            const msg = document.createElement('div');
+            msg.className = 'kill-message';
+            msg.textContent = message;
+            feed.insertBefore(msg, feed.firstChild);
+
+            setTimeout(() => {
+                msg.remove();
+            }, 5000);
+        }
+
+        updateHUD = function() {
+            document.getElementById('health').textContent = Math.max(0, gameState.playerHealth);
+            const healthBar = document.getElementById('health-bar-inner');
+            if (healthBar) {
+                healthBar.style.width = `${Math.max(0, gameState.playerHealth)}%`;
+            }
+            document.getElementById('score').textContent = gameState.playerScore;
+            document.getElementById('enemyScore').textContent = gameState.enemyScore;
+            document.getElementById('currentAmmo').textContent = gameState.currentAmmo;
+            document.getElementById('reserveAmmo').textContent = gameState.reserveAmmo;
+            document.getElementById('weaponName').textContent = weapons[gameState.currentWeapon].name;
+            
+            const staminaBar = document.getElementById('stamina-bar-inner');
+            if (staminaBar) {
+                staminaBar.style.width = `${(gameState.stamina / gameState.maxStamina) * 100}%`;
+            }
+            
+            // Update connection status in multiplayer
+            if (isMultiplayer) {
+                const statusDiv = document.getElementById('connectionStatus');
+                const statusIcon = document.getElementById('connectionIcon');
+                const statusText = document.getElementById('connectionText');
+                
+                statusDiv.style.display = 'block';
+                
+                if (socket && socket.connected) {
+                    switch(connectionQuality) {
+                        case 'good':
+                            statusIcon.textContent = '🟢';
+                            statusText.textContent = 'Connected (Good)';
+                            statusText.style.color = '#4CAF50';
+                            break;
+                        case 'medium':
+                            statusIcon.textContent = '🟡';
+                            statusText.textContent = 'Connected (Medium)';
+                            statusText.style.color = '#FFC107';
+                            break;
+                        case 'poor':
+                            statusIcon.textContent = '🔴';
+                            statusText.textContent = 'Connected (Poor)';
+                            statusText.style.color = '#F44336';
+                            break;
+                        default:
+                            statusIcon.textContent = '🌐';
+                            statusText.textContent = 'Connected';
+                            statusText.style.color = '#2196F3';
+                    }
+                } else {
+                    statusIcon.textContent = '🔴';
+                    statusText.textContent = 'Disconnected';
+                    statusText.style.color = '#F44336';
+                }
+            } else {
+                document.getElementById('connectionStatus').style.display = 'none';
+            }
+        }
+
+        endGame = function(playerWon) {
+            gameState.started = false;
+            const gameOverDiv = document.getElementById('gameOver');
+            const gameOverText = document.getElementById('gameOverText');
+            const finalScore = document.getElementById('finalScore');
+
+            gameOverText.textContent = playerWon ? 'VICTORY!' : 'DEFEAT!';
+            finalScore.textContent = `Final Score: ${gameState.playerScore} - ${gameState.enemyScore}`;
+            gameOverDiv.style.display = 'block';
+        }
+
+        function togglePause() {
+            gameState.paused = !gameState.paused;
+        }
+
+        // Enhanced Movement Update with smooth animations
+        function updateMovement(deltaTime) {
+            if (!gameState.started || gameState.paused) return;
+
+            // --- Stamina ---
+            if (gameState.isSprinting && gameState.isMoving) {
+                gameState.stamina -= 15 * deltaTime;
+                if (gameState.stamina < 0) {
+                    gameState.stamina = 0;
+                    gameState.isSprinting = false;
+                }
+            } else if (gameState.stamina < gameState.maxStamina) {
+                gameState.stamina += 10 * deltaTime;
+                if (gameState.stamina > gameState.maxStamina) {
+                    gameState.stamina = gameState.maxStamina;
+                }
+            }
+
+            // Lean
+            gameState.lean = lerp(gameState.lean, gameState.leanTarget, deltaTime * 10);
+
+            const baseSpeed = (gameState.isSprinting && gameState.stamina > 0) ? 12 : 8;
+            
+            // FOV
+            const targetFov = (gameState.isSprinting && gameState.stamina > 0) ? 85 : 75;
+            camera.fov = lerp(camera.fov, targetFov, deltaTime * 8);
+            camera.updateProjectionMatrix();
+
+            // Get camera direction vectors
+            const forward = new THREE.Vector3();
+            const right = new THREE.Vector3();
+            
+            camera.getWorldDirection(forward);
+            forward.y = 0; // Keep movement horizontal
+            forward.normalize();
+            
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+            
+            // Calculate movement direction based on input
+            const moveDirection = new THREE.Vector3();
+            
+            if (moveForward) moveDirection.add(forward);
+            if (moveBackward) moveDirection.sub(forward);
+            if (moveRight) moveDirection.add(right);
+            if (moveLeft) moveDirection.sub(right);
+            
+            gameState.wasMoving = gameState.isMoving;
+            gameState.isMoving = moveDirection.length() > 0;
+            
+            // Smooth movement speed interpolation
+            if (gameState.isMoving) {
+                gameState.targetMovementSpeed = 1.0;
+            } else {
+                gameState.targetMovementSpeed = 0.0;
+            }
+            
+            // Smooth speed transition
+            const speedLerpSpeed = gameState.isMoving ? 8 : 12;
+            gameState.movementSpeed = lerp(gameState.movementSpeed, gameState.targetMovementSpeed, deltaTime * speedLerpSpeed);
+            
+            if (gameState.isMoving) {
+                moveDirection.normalize();
+                const actualSpeed = baseSpeed * gameState.movementSpeed * deltaTime;
+                camera.position.add(moveDirection.multiplyScalar(actualSpeed));
+            }
+
+            // --- Vertical Movement ---
+            
+            // Jump input
+            if (gameState.onGround && spacePressed && gameState.stamina >= 20) {
+                gameState.velocityY = 8;
+                gameState.onGround = false;
+                gameState.stamina -= 20;
+            }
+
+            // Apply gravity
+            if (!gameState.onGround) {
+                gameState.velocityY -= 20 * deltaTime;
+            }
+            
+            // Update camera Y position based on velocity
+            camera.position.y += gameState.velocityY * deltaTime;
+
+            // Head bob
+            let verticalBob = 0;
+            if (gameState.isMoving && gameState.onGround) {
+                const sprintMultiplier = gameState.isSprinting ? 1.5 : 1;
+                gameState.headBobPhase += deltaTime * 10 * gameState.movementSpeed * sprintMultiplier;
+                verticalBob = Math.sin(gameState.headBobPhase) * 0.06 * gameState.movementSpeed;
+            } else {
+                // Smooth return to idle
+                gameState.headBobPhase = lerp(gameState.headBobPhase, 0, deltaTime * 5);
+            }
+
+            // Ground collision and final Y position
+            if (camera.position.y <= gameState.baseHeight + verticalBob) {
+                camera.position.y = gameState.baseHeight + verticalBob;
+                gameState.onGround = true;
+                gameState.velocityY = 0;
+            } else {
+                gameState.onGround = false;
+            }
+            
+            // --- Rotational Movement ---
+            if (gameState.isMoving && gameState.onGround) {
+                const sprintMultiplier = gameState.isSprinting ? 1.5 : 1;
+                if (gameState.movementSpeed > 0.1) {
+                    const walkTilt = Math.sin(gameState.headBobPhase * 0.5) * 0.01 * gameState.movementSpeed;
+                    euler.setFromQuaternion(camera.quaternion);
+                    euler.z = walkTilt + gameState.lean * 0.3;
+                    camera.quaternion.setFromEuler(euler);
+                } else {
+                    euler.setFromQuaternion(camera.quaternion);
+                    euler.z = lerp(euler.z, gameState.lean * 0.3, deltaTime * 8);
+                    camera.quaternion.setFromEuler(euler);
+                }
+                
+                gameState.footstepTimer += deltaTime;
+                const footstepInterval = 0.4 + (1 - gameState.movementSpeed) * 0.2;
+                if (gameState.footstepTimer > footstepInterval / sprintMultiplier) {
+                    playFootstepSound();
+                    gameState.footstepTimer = 0;
+                }
+                
+                if (!gameState.wasMoving && gameState.movementSpeed < 0.1) {
+                    gameState.landingTimer = 0.2;
+                    applyCameraShake(0.01, 'default');
+                }
+            } else {
+                // not moving or in air
+                gameState.headBobPhase = lerp(gameState.headBobPhase, 0, deltaTime * 5);
+                
+                euler.setFromQuaternion(camera.quaternion);
+                euler.z = lerp(euler.z, gameState.lean * 0.3, deltaTime * 8);
+                camera.quaternion.setFromEuler(euler);
+                
+                if (gameState.wasMoving && gameState.movementSpeed > 0.5) {
+                    gameState.landingTimer = 0.15;
+                    applyCameraShake(0.01, 'default');
+                }
+            }
+            
+            // Update landing effect
+            if (gameState.landingTimer > 0) {
+                gameState.landingTimer -= deltaTime;
+                if (gameState.landingTimer < 0) gameState.landingTimer = 0;
+            }
+            
+            // Update weapon position and animations
+            updateWeaponPosition(deltaTime);
+            
+            // Boundaries
+            camera.position.x = Math.max(-28, Math.min(28, camera.position.x));
+            camera.position.z = Math.max(-28, Math.min(28, camera.position.z));
+        }
+
+        // Animation Loop
+        let lastTime = performance.now();
+        
+        animate = function() {
+            requestAnimationFrame(animate);
+            
+            const currentTime = performance.now();
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            if (gameState.isDying) {
+                gameState.deathTimer += deltaTime;
+                const deathProgress = Math.min(gameState.deathTimer / 1.5, 1); // 1.5 second animation
+                
+                // Camera fall using euler angles to avoid quaternion issues
+                euler.setFromQuaternion(camera.quaternion);
+                euler.x = lerp(euler.x, -Math.PI / 2, deltaTime * 2);
+                euler.z = lerp(euler.z, (Math.random() - 0.5) * 0.5, deltaTime * 2);
+                camera.quaternion.setFromEuler(euler);
+
+                camera.position.y = lerp(camera.position.y, 0.5, deltaTime * 1);
+
+            } else if (gameState.started && !gameState.paused) {
+                updateMovement(deltaTime);
+                updateEnemy(deltaTime);
+                updateCameraShake(deltaTime);
+                
+                // Interpolate other player position smoothly (every frame)
+                if (isMultiplayer && otherPlayer) {
+                    if (otherPlayer.isDying) {
+                        otherPlayer.deathTimer += deltaTime;
+                        
+                        otherPlayer.rotation.x = lerp(otherPlayer.rotation.x, -Math.PI / 2, deltaTime * 5);
+                        otherPlayer.rotation.z = lerp(otherPlayer.rotation.z, (Math.random() - 0.5) * 2, deltaTime * 5);
+                        otherPlayer.position.y = lerp(otherPlayer.position.y, 0.5, deltaTime * 5);
+
+                        if (otherPlayer.deathTimer >= 1.5) {
+                            otherPlayer.visible = false;
+                        }
+                    } else {
+                        const lerpSpeed = Math.min(1.0, deltaTime * 20); // Smooth interpolation (20x speed)
+                        
+                        // Interpolate position
+                        otherPlayer.position.lerp(targetOtherPlayerPosition, lerpSpeed);
+                        
+                                                                // Interpolate rotation using quaternion
+                        
+                                                                const targetQuaternion = new THREE.Quaternion().setFromEuler(targetOtherPlayerRotation);
+                        
+                                                                otherPlayer.quaternion.slerp(targetQuaternion, lerpSpeed);
+                        
+                                                                
+                        
+                                                                // Ensure visibility and in scene
+                        
+                                                                otherPlayer.visible = true;                        if (scene && !scene.children.includes(otherPlayer)) {
+                            scene.add(otherPlayer);
+                        }
+                        
+                        // Update other player username position
+                        if (otherPlayer.usernameSprite) {
+                            otherPlayer.usernameSprite.position.set(
+                                otherPlayer.position.x,
+                                otherPlayer.position.y + 0.5,
+                                otherPlayer.position.z
+                            );
+                        }
+                    }
+                }
+                
+                // Make enemy speaker icon always face the camera
+                if (enemySpeakerIcon && enemySpeakerIcon.visible) {
+                    enemySpeakerIcon.lookAt(camera.position);
+                }
+                
+                // Update enemy sound volumes based on distance in real-time
+                updateEnemySoundVolumes();
+                
+                // Update death sound volume based on distance in real-time
+                if (activeOtherPlayerDeathSound && activeOtherPlayerDeathSound.gainNode && otherPlayer) {
+                    const distance = camera.position.distanceTo(otherPlayer.position);
+                    const maxDistance = 25; // Reduced max distance for death sounds
+                    const minVolume = 0.02; // Lower minimum volume for very distant sounds
+                    // Use more aggressive exponential falloff for death sounds
+                    const falloffRate = 3.0; // Even higher falloff rate for death sounds
+                    let volume = Math.exp(-(distance / maxDistance) * falloffRate);
+                    volume = Math.max(minVolume, Math.min(1, volume)); // Clamp volume between minVolume and 1
+                    
+                    // Debug logging for testing (occasionally to avoid spam)
+                    if (Math.random() < 0.01) { // 1% chance to log
+                        console.log(`Death sound volume: ${volume.toFixed(3)} at distance: ${distance.toFixed(1)}m`);
+                    }
+                    
+                    // Update the gain node with the new volume
+                    activeOtherPlayerDeathSound.gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+                }
+                
+                // Send position data
+                if (isMultiplayer) {
+                    // Check connection state
+                    let isWebRTCReady = false;
+                    if (useWebRTC && dataChannel) {
+                        isWebRTCReady = (dataChannel.open === true) || (dataChannel.readyState === 'open' || dataChannel.readyState === 'OPEN');
+                    }
+                    const isSocketReady = socket && socket.connected;
+                    
+                    if (isWebRTCReady || isSocketReady) {
+                        // Get current camera position and rotation (after movement, before shake)
+                        // Note: camera shake is applied after this, so we get the base position
+                        const basePosition = camera.position.clone();
+                        
+                        // Convert quaternion to euler for transmission
+                        const tempEuler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+                        
+                        const positionData = {
+                        type: 'position',
+                            x: basePosition.x,
+                            y: basePosition.y,
+                            z: basePosition.z,
+                            rx: tempEuler.x,
+                            ry: tempEuler.y,
+                            rz: tempEuler.z
+                        };
+                        
+                        sendToOther(positionData);
+                    } else {
+                        // Debug: Log when connection is not ready (occasionally)
+                        if (Math.random() < 0.005) { // 0.5% chance to log
+                            console.warn('⚠️ Cannot send position - connection not ready', {
+                                isMultiplayer: isMultiplayer,
+                                useWebRTC: useWebRTC,
+                                hasDataChannel: !!dataChannel,
+                                dataChannelOpen: dataChannel?.open,
+                                dataChannelReadyState: dataChannel?.readyState,
+                                hasSocket: !!socket,
+                                socketConnected: socket?.connected
+                            });
+                        }
+                    }
+                }
+                
+                // Apply camera shake to position and rotation (only if there's actual shake)
+                if (cameraShake.intensity > 0.001 || 
+                    Math.abs(cameraShake.offsetX) > 0.0001 || 
+                    Math.abs(cameraShake.offsetY) > 0.0001 ||
+                    Math.abs(cameraShake.rotationX) > 0.0001 || 
+                    Math.abs(cameraShake.rotationY) > 0.0001) {
+                camera.position.x += cameraShake.offsetX;
+                camera.position.y += cameraShake.offsetY;
+                camera.position.z += cameraShake.offsetZ;
+                
+                euler.setFromQuaternion(camera.quaternion);
+                euler.x += cameraShake.rotationX;
+                euler.y += cameraShake.rotationY;
+                camera.quaternion.setFromEuler(euler);
+                }
+                
+                // Update local player username position to follow camera
+                if (localPlayerUsernameSprite) {
+                    localPlayerUsernameSprite.position.set(camera.position.x, camera.position.y + 0.5, camera.position.z);
+                }
+            }
+
+            // Calculate motion blur based on camera movement
+            const currentPos = camera.position.clone();
+            const currentQuat = camera.quaternion.clone();
+            
+            const positionDelta = currentPos.distanceTo(previousCameraPosition);
+            const rotationDelta = currentQuat.angleTo(previousCameraQuaternion);
+            
+            motionBlurAmount = Math.min((positionDelta * 50 + rotationDelta * 20), 1.0);
+            
+            previousCameraPosition.copy(currentPos);
+            previousCameraQuaternion.copy(currentQuat);
+            
+            // Update depth of field focus based on what player is looking at (only if DOF enabled)
+            if (postProcessMaterial.uniforms.enableDOF.value > 0.5) {
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                
+                if (intersects.length > 0) {
+                    const targetDistance = intersects[0].distance;
+                    postProcessMaterial.uniforms.focusDistance.value += (targetDistance - postProcessMaterial.uniforms.focusDistance.value) * 0.1;
+                }
+            }
+            
+            // Only apply motion blur when actually moving fast
+            postProcessMaterial.uniforms.motionBlur.value = motionBlurAmount > 0.05 ? motionBlurAmount : 0.0;
+            
+            // Render main scene to texture (no weapon)
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(scene, camera);
+            
+            // Render depth pass
+            scene.overrideMaterial = depthMaterial;
+            renderer.setRenderTarget(depthRenderTarget);
+            renderer.render(scene, camera);
+            scene.overrideMaterial = null;
+            
+            // Apply post-processing
+            postProcessMaterial.uniforms.tDiffuse.value = renderTarget.texture;
+            postProcessMaterial.uniforms.tDepth.value = depthRenderTarget.texture;
+            
+            // Render post-processed scene to screen
+            renderer.setRenderTarget(null);
+            renderer.autoClear = true;
+            renderer.render(postProcessScene, postProcessCamera);
+            
+            // Sync weapon camera with main camera
+            weaponCamera.position.copy(camera.position);
+            weaponCamera.rotation.copy(camera.rotation);
+            weaponCamera.quaternion.copy(camera.quaternion);
+            
+            // Add weapon camera to scene for this frame
+            weaponScene.add(weaponCamera);
+            
+            // Render weapon on top (no post-processing, don't clear color buffer)
+            renderer.autoClear = false;
+            renderer.clearDepth(); // Only clear depth, keep color
+            renderer.render(weaponScene, weaponCamera);
+            renderer.autoClear = true; // Reset for next frame
+        }
+
+        // Start Game (AI Mode)
+        document.getElementById('startButton').addEventListener('click', () => {
+            // Get username from input
+            const usernameInput = document.getElementById('usernameInput');
+            const username = usernameInput.value.trim() || 'Player';
+            gameState.playerUsername = username;
+            
+            // Initialize game first if not already done
+            if (!window.gameInitialized) {
+                console.log('Initializing game for AI mode...');
+                initGame();
+            }
+            
+            document.getElementById('startScreen').style.display = 'none';
+            gameState.started = true;
+            
+            // Request pointer lock
+            renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock ||
+                                                      renderer.domElement.mozRequestPointerLock ||
+                                                      renderer.domElement.webkitRequestPointerLock;
+            renderer.domElement.requestPointerLock();
+            
+            // Create local player username display
+            createLocalPlayerUsernameDisplay();
+            
+            updateHUD();
+            
+            // Start animation loop only once
+            if (!window.animateStarted) {
+                window.animateStarted = true;
+                animate();
+            }
+        });
+        
+        // Re-lock pointer on click if lost
+        renderer.domElement.addEventListener('click', () => {
+            if (gameState.started && !isPointerLocked) {
+                renderer.domElement.requestPointerLock();
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            
+            // Update weapon camera too
+            weaponCamera.aspect = window.innerWidth / window.innerHeight;
+            weaponCamera.updateProjectionMatrix();
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Update render targets
+            renderTarget.setSize(window.innerWidth, window.innerHeight);
+            depthRenderTarget.setSize(window.innerWidth, window.innerHeight);
+            postProcessMaterial.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+        });
+
+        // Initial render
+        renderer.render(scene, camera);
+        
+        } // Close initGame function
+        
+        // Crosshair management (moved outside initGame for global access)
+        let currentCrosshairStyle = 'dot'; // Default to dot
+        
+        function selectCrosshair(style) {
+            currentCrosshairStyle = style;
+            const crosshair = document.getElementById('crosshair');
+            
+            if (style === 'dot') {
+                crosshair.classList.add('crosshair-dot-only');
+            } else {
+                crosshair.classList.remove('crosshair-dot-only');
+            }
+            
+            // Update visual selection
+            document.querySelectorAll('.crosshair-preview').forEach(preview => {
+                preview.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                preview.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            });
+            
+            event.target.closest('.crosshair-preview').style.borderColor = '#4CAF50';
+            event.target.closest('.crosshair-preview').style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
+            
+            console.log('Crosshair style selected:', style);
+        }
+        
+        // Set default crosshair style on page load
+        window.addEventListener('load', () => {
+            // Apply dot crosshair by default
+            const crosshair = document.getElementById('crosshair');
+            if (crosshair) {
+                crosshair.classList.add('crosshair-dot-only');
+            }
+            
+            // Highlight the dot option in the UI
+            const dotPreview = document.querySelector('.crosshair-preview-dot');
+            if (dotPreview && dotPreview.parentElement) {
+                dotPreview.parentElement.style.borderColor = '#4CAF50';
+                dotPreview.parentElement.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocky Terrain 02 Test</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        #info {
+            position: absolute; top: 10px; left: 10px; color: white;
+            font-family: sans-serif; background: rgba(0,0,0,0.5); padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Loading Terrain...</div>
+    
+    <!-- Using Import Map for modern Three.js loading without bundlers -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa0a0a0); // Grey background
+        scene.fog = new THREE.Fog(0xa0a0a0, 10, 50);  // Adds some depth
+
+        // 2. Camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 8); // Move camera up and back
+
+        // 3. Renderer (High quality settings for textures)
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        // CRITICAL: Set correct color space for PBR textures
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        document.body.appendChild(renderer.domElement);
+
+        // 4. Lighting
+        // Ambient Light (soft general light)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // Directional Light (The "Sun")
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(5, 10, 7.5);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // 5. Load your Rocky Terrain
+        const loader = new GLTFLoader();
+        
+        // Ensure path matches exactly what's in your file explorer
+        loader.load('./rocky_terrain_02_4k.gltf', 
+            (gltf) => {
+                const model = gltf.scene;
+                
+                // Optional: Force textures to look sharp or apply shadows
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        
+                        // Fix for possible material roughness scaling
+                        if(child.material.map) child.material.map.anisotropy = 16;
+                    }
+                });
+
+                scene.add(model);
+                
+                // Update text
+                document.getElementById('info').innerText = "Loaded: Rocky Terrain 02";
+            },
+            (xhr) => {
+                // Loading progress
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            },
+            (error) => {
+                // Error handling
+                console.error('An error happened', error);
+                document.getElementById('info').innerText = "Error: Check Console (F12)";
+            }
+        );
+
+        // 6. Controls (Orbit around the model)
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.target.set(0, 0, 0);
+
+        // 7. Resize Handler
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // 8. Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

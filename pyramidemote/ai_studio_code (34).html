@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js FBX Dancer (Debug Mode)</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<!-- Import Map -->
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+    let camera, scene, renderer, mixer;
+    const clock = new THREE.Clock();
+
+    init();
+    animate();
+
+    function init() {
+        // 1. Create Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa0a0a0);
+        scene.fog = new THREE.Fog(0xa0a0a0, 200, 1000);
+
+        // 2. Create Camera
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+        camera.position.set(100, 200, 300);
+
+        // 3. Create Lights
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+        hemiLight.position.set(0, 200, 0);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(0, 200, 100);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // 4. Ground
+        const mesh = new THREE.Mesh( 
+            new THREE.PlaneGeometry(2000, 2000), 
+            new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false }) 
+        );
+        mesh.rotation.x = - Math.PI / 2;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+
+        const grid = new THREE.GridHelper(2000, 20, 0x000000, 0x000000);
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add(grid);
+
+        // 5. Load the FBX Model
+        const loader = new FBXLoader();
+        loader.load('dance.fbx', (object) => {
+
+            // ==========================================
+            // START DEBUG CODE (Requested Addition)
+            // ==========================================
+            console.log('=== ALL BONES IN DANCE.FBX ===');
+            object.traverse((child) => {
+                if (child.isBone) {
+                    console.log('Bone:', child.name);
+                }
+            });
+            console.log('=== END BONES ===');
+            // ==========================================
+
+
+            // --- ANIMATION SETUP ---
+            mixer = new THREE.AnimationMixer(object);
+            
+            if (object.animations.length > 0) {
+                const action = mixer.clipAction(object.animations[0]);
+                action.play();
+            }
+
+            // --- MODEL ADJUSTMENTS ---
+            object.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            object.scale.set(1, 1, 1); 
+            scene.add(object);
+
+        }, (xhr) => {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        }, (error) => {
+            console.error('An error happened', error);
+        });
+
+        // 6. Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // 7. Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 100, 0);
+        controls.update();
+
+        window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        if (mixer) mixer.update(delta);
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>

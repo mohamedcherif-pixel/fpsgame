@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+electron/node_modules/
+
+# Build outputs (installers are too large for GitHub)
+electron/dist/
+dist/
+
+# Large asset files (over 100MB)
+*.exe
+background.glb
+Untitled.glb
+lilienstein_8k.hdr
+electron/game/lilienstein_8k.hdr
+
+# HDR/EXR files (large environment maps)
+*.hdr
+*.exr
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+crash_log.txt
+
+# Temporary files
+*.tmp
+*.temp

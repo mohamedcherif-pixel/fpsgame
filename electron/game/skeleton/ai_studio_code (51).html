@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FBX Animation Viewer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #333; font-family: sans-serif; }
+        #info {
+            position: absolute; top: 10px; right: 10px; width: 300px;
+            background: rgba(0,0,0,0.8); color: white; padding: 10px;
+            border-radius: 8px; pointer-events: auto;
+        }
+        h3 { margin-top: 0; }
+        select { width: 100%; padding: 8px; margin-bottom: 10px; background: #222; color: #fff; border: 1px solid #555; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; font-weight: bold; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="loading">Loading Model...</div>
+    
+    <!-- UI Controls -->
+    <div id="info">
+        <h3>Animation Selector</h3>
+        <label>Select Action:</label>
+        <select id="animSelect" disabled>
+            <option>Loading animations...</option>
+        </select>
+        <p style="font-size: 0.8rem; color: #aaa;">Left Click to Rotate | Right Click to Pan | Scroll to Zoom</p>
+    </div>
+
+    <!-- Import Map for Three.js (No download needed, uses internet) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+        // --- 1. CONFIGURATION ---
+        
+        // The file usually containing the mesh/skin
+        // Based on file size (551Ko) and name, this is likely your base character
+        const MODEL_FILE = 'spookyskele1_#0000_fbx.fbx';
+
+        // The list transcribed from your screenshots
+        const ANIMATION_FILES = [
+            "crouching turn 90 left.fbx",
+            "crouching turn 90 right.fbx",
+            "death crouching headshot front.fbx",
+            "death from back headshot.fbx",
+            "death from front headshot.fbx",
+            "death from right.fbx",
+            "death from the back.fbx",
+            "death from the front.fbx",
+            "idle aiming.fbx",
+            "idle crouching aiming.fbx",
+            "idle crouching.fbx",
+            "idle.fbx",
+            "jump down.fbx",
+            "jump loop.fbx",
+            "jump up.fbx",
+            "run backward left.fbx",
+            "run backward right.fbx",
+            "run backward.fbx",
+            "run forward left.fbx",
+            "run forward right.fbx",
+            "run Forward.fbx", 
+            "run left.fbx",
+            "run right.fbx",
+            "sprint backward left.fbx",
+            "sprint backward right.fbx",
+            "sprint backward.fbx",
+            "sprint forward left.fbx",
+            "sprint forward right.fbx",
+            "sprint forward.fbx",
+            "sprint left.fbx",
+            "sprint right.fbx",
+            "turn 90 left.fbx",
+            "turn 90 right.fbx",
+            "walk backward left.fbx",
+            "walk backward right.fbx",
+            "walk backward.fbx",
+            "walk crouching backward left.fbx",
+            "walk crouching backward right.fbx",
+            "walk crouching backward.fbx",
+            "walk crouching forward left.fbx",
+            "walk crouching forward right.fbx",
+            "walk crouching forward.fbx",
+            "walk crouching left.fbx",
+            "walk crouching right.fbx",
+            "walk forward left.fbx",
+            "walk forward right.fbx",
+            "walk forward.fbx",
+            "walk left.fbx",
+            "walk right.fbx"
+        ];
+
+        // --- 2. SCENE SETUP ---
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+        camera.position.set(100, 200, 300);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa0a0a0);
+        
+        // Grid helper to see the floor
+        const grid = new THREE.GridHelper(2000, 20, 0x000000, 0x000000);
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add(grid);
+
+        // Lighting
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+        scene.add(hemiLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(0, 200, 100);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 100, 0);
+        controls.update();
+
+        // --- 3. LOGIC TO LOAD ANIMATIONS ---
+        
+        let mixer; // Handles the animation playing
+        const clock = new THREE.Clock();
+        const loader = new FBXLoader();
+        let characterMesh = null;
+        let animationActions = {}; // Store loaded actions
+
+        // Helper: Init the list in HTML
+        const selector = document.getElementById('animSelect');
+        
+        function populateUI() {
+            selector.innerHTML = ""; // Clear
+            ANIMATION_FILES.forEach(filename => {
+                const opt = document.createElement('option');
+                opt.value = filename;
+                opt.innerText = filename.replace('.fbx', '');
+                selector.appendChild(opt);
+            });
+            selector.disabled = false;
+            
+            // Add change listener
+            selector.addEventListener('change', (e) => {
+                playAnimation(e.target.value);
+            });
+        }
+
+        // 1. Load the MAIN MODEL (Spooky Skele)
+        loader.load(MODEL_FILE, (object) => {
+            characterMesh = object;
+            
+            // Scale logic: sometimes FBX comes in huge or tiny.
+            // 0.1 is a guess, you might need to change to 1.0 or 0.01 depending on the asset
+            object.scale.set(1, 1, 1); 
+
+            mixer = new THREE.AnimationMixer(object);
+            
+            object.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            scene.add(object);
+            document.getElementById('loading').style.display = 'none';
+            populateUI();
+            
+            // Immediately start loading the first animation
+            if(ANIMATION_FILES.length > 0) {
+                playAnimation(ANIMATION_FILES[0]); 
+            }
+
+        }, undefined, (error) => {
+            console.error(error);
+            document.getElementById('loading').innerText = "Error: See Console (F12). Ensure files are in folder.";
+        });
+
+        // 2. Function to load and play an specific animation
+        function playAnimation(filename) {
+            
+            if(!characterMesh) return;
+
+            // Check if we already loaded this specific clip
+            // (Caching it saves network)
+            if (animationActions[filename]) {
+                fadeToAction(animationActions[filename]);
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerText = "Loading " + filename + "...";
+
+            loader.load(filename, (animObject) => {
+                
+                // Extract animation clip from the file
+                // Usually Mixamo FBX files have the clip in .animations[0]
+                const clip = animObject.animations[0];
+                if(clip) {
+                    // Create an action on the Character Mixer using the new Clip
+                    const action = mixer.clipAction(clip);
+                    animationActions[filename] = action;
+                    fadeToAction(action);
+                } else {
+                    console.warn("No animation found in " + filename);
+                }
+
+                document.getElementById('loading').style.display = 'none';
+
+            }, undefined, (e) => console.error(e));
+        }
+
+        let activeAction;
+
+        function fadeToAction(newAction) {
+            if (activeAction === newAction) return;
+
+            if (activeAction) {
+                activeAction.fadeOut(0.2);
+            }
+            
+            newAction.reset();
+            newAction.fadeIn(0.2);
+            newAction.play();
+            activeAction = newAction;
+        }
+
+        // --- 4. RENDER LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle Window Resize
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+    </script>
+</body>
+</html>

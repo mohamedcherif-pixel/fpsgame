@@ -739,39 +739,21 @@
                     'host-' + Math.random().toString(36).substring(2, 9) :
                     null;
                 
-                // Initialize PeerJS with faster connection settings
+                // Initialize PeerJS (uses free public signaling server)
                 peer = new Peer(peerId, {
                     host: '0.peerjs.com',
                     port: 443,
                     path: '/',
                     secure: true,
-                    // Faster connection configuration
                     config: {
                         iceServers: [
                             { urls: 'stun:stun.l.google.com:19302' },
                             { urls: 'stun:stun1.l.google.com:19302' }
-                        ],
-                        iceCandidatePoolSize: 10,
-                        bundlePolicy: 'max-bundle',
-                        iceTransportPolicy: 'all'
-                    },
-                    // Reduced timeouts for faster connection
-                    pingInterval: 5000,
-                    debug: 1 // Enable debug mode for better error tracking
+                        ]
+                    }
                 });
                 
-                // Fast connection timeout - if PeerJS takes too long, reject quickly
-                const peerTimeout = setTimeout(() => {
-                    if (peer && !peer.open) {
-                        console.warn('⏱️ PeerJS connection timeout (5s) - falling back to Socket.IO');
-                        peer.destroy();
-                        peer = null;
-                        reject(new Error('WebRTC connection timeout - signaling server slow'));
-                    }
-                }, 5000); // 5 second timeout for PeerJS
-                
                 peer.on('open', (id) => {
-                    clearTimeout(peerTimeout);
                     console.log('✅ WebRTC Peer ID:', id);
                     myPlayerId = id;
                     currentRoomId = id;
@@ -1338,20 +1320,17 @@
                 document.getElementById('waitingText').textContent = '⏳ Setting up WebRTC connection...';
                 
                 try {
-                    // Generate peer ID immediately for instant feedback
-                    const peerId = 'host-' + Math.random().toString(36).substring(2, 9);
+                    // Connect using WebRTC (no server needed!)
+                    const peerId = await connectWebRTC(true);
+                    isMultiplayer = true;
+                    isHost = true;
                     
-                    // Show room ID immediately - no waiting!
+                    // Show room ID (this is the Peer ID)
                     document.getElementById('roomId').value = peerId;
-                    document.getElementById('waitingText').textContent = '✅ Room created!\n\nShare this Room ID with your friend!\n\n🌍 Works from anywhere in the world!';
+                    document.getElementById('waitingText').textContent = '⏳ Waiting for opponent...\n\nShare this Room ID with your friend!\n\n🌍 Works from anywhere in the world!';
                     
                     console.log('✅ ROOM CREATED:', peerId);
                     console.log('📋 Share this ID with your friend anywhere in the world!');
-                    
-                    // Start WebRTC connection in background
-                    const peerIdConfirmed = await connectWebRTC(true);
-                    isMultiplayer = true;
-                    isHost = true;
                     
                     // Wait for player to join (handled in setupDataChannel and peer connection event)
                     let connectionReady = false;
@@ -1380,60 +1359,20 @@
                             }, 1000);
                         }
                         }
-                    }, 100); // Check every 100ms for faster detection
+                    }, 300);
                     
-                    // Cleanup after 10 seconds and provide feedback
+                    // Cleanup after 30 seconds if no connection
                     setTimeout(() => {
                         if (!connectionReady) {
                             clearInterval(checkConnection);
-                            console.log('⏳ Still waiting for player... Share the Room ID!');
-                            document.getElementById('waitingText').textContent = '⏳ Still waiting...\n\nMake sure to share this Room ID:\n' + peerId + '\n\nYour friend needs to click "JOIN ROOM" and enter this ID.';
                         }
-                    }, 10000);
+                    }, 30000);
                     
                 } catch (error) {
                     console.error('WebRTC connection failed:', error);
-                    
-                    // Immediate fallback to Socket.IO
-                    console.log('🔄 Falling back to Socket.IO for instant connection...');
-                    try {
-                        // Connect via Socket.IO for instant connection (works worldwide)
-                        socket = io(window.location.origin); // Use current domain for tunnel compatibility
-                        isMultiplayer = true;
-                        isHost = true;
-                        myPlayerId = currentRoomId; // Use the room ID we already generated
-                        currentRoomId = currentRoomId;
-                        
-                        // Show room ID with Socket.IO connection
-                        document.getElementById('waitingText').textContent = '✅ Room created (via Socket.IO)!\n\nShare this Room ID with your friend!\n\n🌍 Works from anywhere in the world!';
-                        
-                        // Wait for player via Socket.IO
-                        socket.on('playerJoined', (playerId) => {
-                            console.log('🎮 Player joined via Socket.IO:', playerId);
-                            document.getElementById('waitingText').textContent = '✅ Player joined! Starting game...';
-                            startGame();
-                        });
-                        
-                        // Handle connection errors
-                        socket.on('connect_error', (error) => {
-                            console.error('❌ Socket.IO connection error:', error);
-                            alert('❌ Connection failed. Please try again.');
-                            document.getElementById('multiplayerSetup').style.display = 'none';
-                            document.getElementById('hostInfo').style.display = 'none';
-                            isMultiplayer = false;
-                            isHost = false;
-                        });
-                        
-                        console.log('✅ Socket.IO fallback successful!');
-                        
-                    } catch (socketError) {
-                        console.error('❌ Socket.IO fallback also failed:', socketError);
-                        alert('❌ Connection failed: ' + error.message + '\n\nTry again or use "PLAY vs AI" for offline mode.');
-                        document.getElementById('multiplayerSetup').style.display = 'none';
-                        document.getElementById('hostInfo').style.display = 'none';
-                        isMultiplayer = false;
-                        isHost = false;
-                    }
+                    alert('❌ Connection failed: ' + error.message + '\n\nTry again or use "PLAY vs AI" for offline mode.');
+                    document.getElementById('multiplayerSetup').style.display = 'none';
+                    document.getElementById('hostInfo').style.display = 'none';
                 }
             });
             
@@ -1468,8 +1407,8 @@
                     // Connect using WebRTC
                     await connectWebRTC(false);
                     
-                    // Reduced wait time for faster connection
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    // Wait a moment for peer to be fully ready
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     
                     // Connect to the host peer
                     console.log('Connecting to peer:', roomId);
@@ -1531,7 +1470,7 @@
                     currentRoomId = roomId;
                     isMultiplayer = true;
                     
-                    // Faster connection checking
+                    // Wait for connection to open with better checking
                     connectionCheckInterval = setInterval(() => {
                         if (conn.open === true || conn.readyState === 'open') {
                             clearInterval(connectionCheckInterval);
@@ -1559,80 +1498,28 @@
                             document.getElementById('joinRoomId').value = roomId;
                             document.getElementById('connectButton').disabled = false;
                         }
-                    }, 100); // Check every 100ms for faster detection
+                    }, 300);
                     
-                    // Reduced timeout for faster fallback to Socket.IO
+                    // Extended timeout for WebRTC connection
                     connectionTimeout = setTimeout(() => {
                         if (!gameState || !gameState.started) {
                             if (connectionCheckInterval) clearInterval(connectionCheckInterval);
                             if (conn && conn.open !== true && conn.readyState !== 'open') {
-                                console.warn('WebRTC timeout - falling back to Socket.IO');
-                                // Don't show alert, just fallback silently
+                                console.error('Connection timeout - peer may be offline');
+                                alert('Connection timeout. Please check:\n\n1. Room ID is correct\n2. Host is waiting in the game\n3. Both players have good internet connection\n\nTry again!');
                                 document.getElementById('joinRoomId').value = roomId;
                                 document.getElementById('connectButton').disabled = false;
-                                // Try Socket.IO fallback
-                                connectToServer().then(() => {
-                                    if (socket && socket.connected) {
-                                        socket.emit('joinRoom', { room: roomId });
-                                    }
-                                }).catch(err => {
-                                    console.error('Socket.IO fallback also failed:', err);
-                                });
                             }
                         }
-                    }, 8000); // 8 seconds for faster fallback
+                    }, 15000); // 15 seconds for WebRTC
                     
                 } catch (error) {
                     console.error('Connection failed:', error);
                     if (connectionCheckInterval) clearInterval(connectionCheckInterval);
                     if (connectionTimeout) clearTimeout(connectionTimeout);
-                    
-                    // Immediate Socket.IO fallback for joining
-                    console.log('🔄 Trying Socket.IO fallback for joining...');
-                    try {
-                        // Connect to server via Socket.IO (works worldwide)
-                        socket = io(window.location.origin); // Use current domain for tunnel compatibility
-                        if (socket) {
-                            console.log('✅ Socket.IO connecting, joining room:', roomId);
-                            socket.emit('joinRoom', { room: roomId });
-                            
-                            // Handle successful join
-                            socket.on('joinedRoom', (data) => {
-                                console.log('✅ Joined room via Socket.IO:', data);
-                                document.getElementById('startScreen').style.display = 'none';
-                                gameState.started = true;
-                                renderer.domElement.requestPointerLock();
-                                updateHUD();
-                                if (!window.animateStarted) {
-                                    window.animateStarted = true;
-                                    animate();
-                                }
-                            });
-                            
-                            // Handle room not found
-                            socket.on('roomNotFound', () => {
-                                alert('❌ Room not found. Make sure the Room ID is correct.');
-                                document.getElementById('joinRoomId').value = roomId;
-                                document.getElementById('connectButton').disabled = false;
-                            });
-                            
-                            // Handle connection errors
-                            socket.on('connect_error', (error) => {
-                                console.error('❌ Socket.IO connection error:', error);
-                                alert('❌ Connection failed. Please try again.');
-                                document.getElementById('joinRoomId').value = roomId;
-                                document.getElementById('connectButton').disabled = false;
-                            });
-                            
-                        } else {
-                            throw new Error('Socket.IO connection failed');
-                        }
-                    } catch (socketError) {
-                        console.error('❌ Socket.IO fallback also failed:', socketError);
-                        alert('❌ Connection failed: ' + error.message + '\n\nMake sure:\n1. Room ID is correct\n2. Host is waiting in the game\n3. You have internet connection');
-                        document.getElementById('joinRoomId').value = roomId;
-                        document.getElementById('connectButton').disabled = false;
-                    }
+                    alert('❌ Connection failed: ' + error.message + '\n\nMake sure:\n1. Room ID is correct\n2. Host is waiting in the game\n3. You have internet connection');
+                    document.getElementById('joinRoomId').value = roomId;
+                    document.getElementById('connectButton').disabled = false;
                 }
             });
             

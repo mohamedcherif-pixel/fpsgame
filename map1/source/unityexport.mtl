@@ -1,0 +1,31 @@
+# MTL file for Unity exported OBJ
+# Materials for the Arena map
+
+newmtl Orange_plain
+Kd 1.0 0.5 0.0
+Ka 0.2 0.1 0.0
+Ks 0.3 0.3 0.3
+Ns 50
+d 1.0
+
+newmtl Grey_plain
+Kd 0.5 0.5 0.5
+Ka 0.1 0.1 0.1
+Ks 0.2 0.2 0.2
+Ns 30
+d 1.0
+
+newmtl Orange_Playground_textures
+Kd 1.0 0.6 0.1
+Ka 0.2 0.1 0.0
+Ks 0.4 0.4 0.4
+Ns 60
+d 1.0
+map_Kd ../textures/Orange_Playground_textures.png
+
+newmtl ProBuilderDefault
+Kd 0.8 0.8 0.8
+Ka 0.1 0.1 0.1
+Ks 0.1 0.1 0.1
+Ns 10
+d 1.0

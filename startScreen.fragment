@@ -1,0 +1,112 @@
+        document.addEventListener('msfullscreenchange', updateFullscreenText);
+    </script>
+
+    <div id="startScreen">
+        <!-- Hidden file input for profile picture -->
+        <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
+
+        <div class="menu-content">
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="usernameInput" placeholder="SOLDIER NAME" maxlength="12" class="menu-input"
+                    style="background: transparent; border: none; border-bottom: 2px solid rgba(255,255,255,0.3); font-size: 18px; padding: 10px 0; width: 100%; color: white; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px;">
+            </div>
+
+            <div class="menu-button-group">
+                <button id="hostButton" class="menu-button">DEPLOY (1v1 HOST)</button>
+                <button id="joinButton" class="menu-button">JOIN SERVER (1v1)</button>
+                <button id="host2v2Button" class="menu-button">SQUAD DEPLOY (2v2 HOST)</button>
+                <button id="join2v2Button" class="menu-button">JOIN SQUAD (2v2)</button>
+                <button id="startButton" class="menu-button">CAMPAIGN (VS AI)</button>
+                <button id="keybindsButton" onclick="openKeybindsModal()" class="menu-button">⚙ OPTIONS</button>
+            </div>
+
+            <!-- Map Selection -->
+            <div class="map-selector">
+                <div class="map-selector-label">⚔ SELECT ARENA</div>
+                <div class="map-options">
+                    <div class="map-option selected" data-map="default" onclick="selectMap('default')">
+                        <div class="map-option-name">WAREHOUSE</div>
+                        <div class="map-option-desc">Classic Arena</div>
+                    </div>
+                    <div class="map-option" data-map="map1" onclick="selectMap('map1')">
+                        <div class="map-option-name">ARENA</div>
+                        <div class="map-option-desc">Unity Export</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skin Selection -->
+            <div class="skin-selector">
+                <div class="skin-selector-label">👤 SELECT SKIN</div>
+                <div class="skin-options">
+                    <div class="skin-option selected" data-skin="soldier" onclick="selectSkin('soldier')">
+                        <div class="skin-option-icon">🔫</div>
+                        <div class="skin-option-name">SOLDIER</div>
+                        <div class="skin-option-desc">Combat Ready</div>
+                    </div>
+                    <div class="skin-option" data-skin="briefcase" onclick="selectSkin('briefcase')">
+                        <div class="skin-option-icon">💼</div>
+                        <div class="skin-option-name">EXECUTIVE</div>
+                        <div class="skin-option-desc">Business Casual</div>
+                    </div>
+                    <div class="skin-option" data-skin="skeleton" onclick="selectSkin('skeleton')">
+                        <div class="skin-option-icon">💀</div>
+                        <div class="skin-option-name">SKELETON</div>
+                        <div class="skin-option-desc">Spooky Bones</div>
+                    </div>
+                    <div class="skin-option" data-skin="zombie" onclick="selectSkin('zombie')">
+                        <div class="skin-option-icon">🧟</div>
+                        <div class="skin-option-name">ZOMBIE</div>
+                        <div class="skin-option-desc">Brain Eater</div>
+                    </div>
+                </div>
+                <button id="emoteButton" class="emote-button" onclick="playEmote()">
+                    💃 DANCE (E)
+                </button>
+            </div>
+
+            <div id="multiplayerSetup"
+                style="display: none; margin-top: 20px; border-left: 2px solid #ffa500; padding-left: 20px;">
+                <div id="hostInfo" style="display: none;">
+                    <div class="menu-label"
+                        style="color: #ffa500; font-family: 'Rajdhani', sans-serif; font-size: 12px;">SERVER ID</div>
+                    <input type="text" id="roomId" readonly class="menu-input menu-input-readonly"
+                        style="background: transparent; border: none; font-size: 14px; letter-spacing: 1.5px; color: white; font-family: 'Rajdhani', sans-serif; padding: 5px 0; word-break: break-all;">
+                    <button id="startGameButton" class="menu-button" style="color: #ffa500; margin-top: 10px;">LAUNCH
+                        MISSION</button>
+                </div>
+                <div id="joinInfo" style="display: none;">
+                    <div class="menu-label"
+                        style="color: #ffa500; font-family: 'Rajdhani', sans-serif; font-size: 12px;">ENTER SERVER ID
+                    </div>
+                    <input type="text" id="joinRoomId" placeholder="SERVER ID" class="menu-input"
+                        style="background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.3); font-size: 14px; letter-spacing: 1.5px; color: white; margin-bottom: 10px; font-family: 'Rajdhani', sans-serif;">
+                    <div class="menu-button-group">
+                        <button id="connectButton" class="menu-button">CONNECT</button>
+                        <button id="cancelButton" class="menu-button" style="color: #ff3b30;">ABORT</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Separate Status Display -->
+            <div id="waitingText"
+                style="display: none; color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-top: 20px; font-family: 'Rajdhani', sans-serif; border-top: 1px solid rgba(255, 165, 0, 0.3); padding-top: 15px;">
+                WAITING FOR OPPONENT...</div>
+
+            <!-- Hidden controls and crosshair for cleaner look, can be moved to options later if needed -->
+            <div class="controls" style="display: none;">
+                <strong>CONTROLS:</strong><br>
+                ZQSD - Move | Mouse - Look | Left Click - Shoot | R - Reload<br>
+                1, 2, 3 - Switch Weapons | F - Toggle DOF | ESC - Pause<br>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MUSIC PLAYER -->
+    <div id="musicPlayer" class="music-player">
+        <div class="mp-autoplay-prompt" id="mpAutoplayPrompt">
+            <div class="mp-prompt-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+            <span class="mp-prompt-text">CLICK TO PLAY</span>
+        </div>
+        <div class="mp-artwork-section">

@@ -1,0 +1,24 @@
+# Blender 5.0.0 MTL File: 'coast_sand_rocks_02_8k.blend'
+# www.blender.org
+
+newmtl coast_sand_rocks_02
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:/Users/cheri/Downloads/coast_sand_rocks_02_8k.blend/textures/coast_sand_rocks_02_diff_8k.jpg
+map_Ns C:/Users/cheri/Downloads/coast_sand_rocks_02_8k.blend/textures/coast_sand_rocks_02_rough_8k.exr
+map_Bump -bm 1.000000 C:/Users/cheri/Downloads/coast_sand_rocks_02_8k.blend/textures/coast_sand_rocks_02_nor_gl_8k.exr
+
+newmtl rock_moss_set_01
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd C:/rock_moss_set_01_diff_8k.jpg
+map_Bump -bm 1.000000 C:/rock_moss_set_01_nor_gl_8k.jpg

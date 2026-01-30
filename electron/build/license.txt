@@ -1,0 +1,27 @@
+TAYA7 SAYEB - END USER LICENSE AGREEMENT
+
+By installing this game, you agree to the following terms:
+
+1. LICENSE GRANT
+   You are granted a non-exclusive license to install and play TAYA7 SAYEB 
+   for personal, non-commercial use.
+
+2. RESTRICTIONS
+   - You may not modify, reverse engineer, or decompile the game
+   - You may not redistribute the game without permission
+   - You may not use the game for commercial purposes
+
+3. ONLINE FEATURES
+   This game includes online multiplayer features. You agree to:
+   - Play fairly and not use cheats or exploits
+   - Respect other players
+   - Not engage in toxic behavior
+
+4. DISCLAIMER
+   THE GAME IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+   THE DEVELOPERS ARE NOT LIABLE FOR ANY DAMAGES ARISING FROM USE.
+
+5. ACCEPTANCE
+   By clicking "I Agree" you accept these terms and conditions.
+
+Copyright (c) 2026 TAYA7. All rights reserved.
