@@ -6,16 +6,8 @@ electron/node_modules/
 electron/dist/
 dist/
 
-# Large asset files (over 100MB)
-*.exe
-background.glb
-Untitled.glb
-lilienstein_8k.hdr
-electron/game/lilienstein_8k.hdr
-
-# HDR/EXR files (large environment maps)
-*.hdr
-*.exr
+# Python virtual environment
+.venv/
 
 # OS files
 .DS_Store
